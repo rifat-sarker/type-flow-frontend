@@ -11,15 +11,30 @@ interface KeyboardStageProps {
   showHands: boolean;
 }
 
-export function KeyboardStage({ pressedCode, pressId, showKeyboard, showHands }: KeyboardStageProps) {
+export function KeyboardStage({
+  pressedCode,
+  pressId,
+  showKeyboard,
+  showHands,
+}: KeyboardStageProps) {
+  // Hands measure real key positions out of this container, so both have to live
+  // under the same positioned ancestor.
   const stageRef = useRef<HTMLDivElement>(null);
 
   if (!showKeyboard) return null;
 
   return (
-    <div ref={stageRef} className="relative w-full max-w-3xl mx-auto mt-10 hidden md:block">
-      <Hands stageRef={stageRef} pressedCode={pressedCode} pressId={pressId} enabled={showHands} />
-      <Keyboard pressedCode={pressedCode} pressId={pressId} />
+    <div ref={stageRef} className="relative w-full max-w-4xl mx-auto mt-10 hidden md:block">
+      <Keyboard
+        pressedCode={pressedCode}
+        pressId={pressId}
+      />
+      <Hands
+        stageRef={stageRef}
+        pressedCode={pressedCode}
+        pressId={pressId}
+        enabled={showHands}
+      />
     </div>
   );
 }
