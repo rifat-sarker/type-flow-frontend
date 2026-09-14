@@ -164,6 +164,11 @@ export function TypingTest() {
   // global keyboard input
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      // Don't hijack keystrokes meant for an actual form field (none on this page
+      // today, but this keeps the global listener from ever fighting one later).
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+
       const code = codeFromKeyboardEvent(e);
       setPressedCode(code);
       setPressId((id) => id + 1);
@@ -173,9 +178,12 @@ export function TypingTest() {
         restart();
         return;
       }
-      if (e.key === "Enter" && mode === "zen" && engine.started && !engine.finished) {
+      if (e.key === "Enter") {
+        // Always swallow Enter here - words never contain a literal newline, and if we
+        // don't preventDefault, the browser forwards it as a native click to whichever
+        // button last had focus (e.g. "Restart"), silently resetting the test mid-type.
         e.preventDefault();
-        finishTest();
+        if (mode === "zen" && engine.started && !engine.finished) finishTest();
         return;
       }
       if (engine.finished) return;

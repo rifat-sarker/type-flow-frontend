@@ -7,10 +7,14 @@ import { AuthUser } from "@/types";
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
-  login: (emailOrUsername: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  login: (emailOrUsername: string, password: string) => Promise<AuthUser>;
+  register: (username: string, email: string, password: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  verifyOtp: (email: string, code: string) => Promise<void>;
+  resendOtp: (email: string, purpose: "verify" | "reset") => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -43,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setAccessToken(data.accessToken);
     setUser(data.user);
+    return data.user;
   }, []);
 
   const register = useCallback(async (username: string, email: string, password: string) => {
@@ -53,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     setAccessToken(data.accessToken);
     setUser(data.user);
+    return data.user;
   }, []);
 
   const logout = useCallback(async () => {
@@ -61,8 +67,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const verifyOtp = useCallback(async (email: string, code: string) => {
+    const data = await api.post<{ user: AuthUser }>("/api/auth/verify-otp", { email, code });
+    setUser(data.user);
+  }, []);
+
+  const resendOtp = useCallback(async (email: string, purpose: "verify" | "reset") => {
+    await api.post("/api/auth/resend-otp", { email, purpose });
+  }, []);
+
+  const forgotPassword = useCallback(async (email: string) => {
+    await api.post("/api/auth/forgot-password", { email });
+  }, []);
+
+  const resetPassword = useCallback(async (email: string, code: string, newPassword: string) => {
+    await api.post("/api/auth/reset-password", { email, code, newPassword });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, logout, refreshUser, verifyOtp, resendOtp, forgotPassword, resetPassword }}
+    >
       {children}
     </AuthContext.Provider>
   );

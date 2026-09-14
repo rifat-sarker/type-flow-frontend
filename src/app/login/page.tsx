@@ -38,7 +38,12 @@ export default function LoginPage() {
           <Input value={emailOrUsername} onChange={(e) => setEmailOrUsername(e.target.value)} required />
         </div>
         <div>
-          <label className="block text-xs font-mono uppercase text-dim mb-1.5">Password</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-mono uppercase text-dim">Password</label>
+            <Link href="/forgot-password" className="text-xs font-mono text-dim hover:text-accent">
+              Forgot password?
+            </Link>
+          </div>
           <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
         {error && <p className="text-danger text-sm font-mono">{error}</p>}

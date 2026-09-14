@@ -205,10 +205,21 @@ export function RaceTrack({ code }: RaceTrackProps) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (isSpectator) return;
+      // Skip while the chat box (or any future field) has focus, so Enter there
+      // submits the message instead of being swallowed as a typing-test key.
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+
       const keyCode = codeFromKeyboardEvent(e);
       setPressedCode(keyCode);
       setPressId((id) => id + 1);
       if (status !== "active" || engine.finished) return;
+      if (e.key === "Enter") {
+        // Swallow it here too - otherwise an unfocused Enter forwards as a native
+        // click to whatever button last had focus (e.g. "Start race").
+        e.preventDefault();
+        return;
+      }
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         typeChar(e.key);

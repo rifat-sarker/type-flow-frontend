@@ -23,38 +23,40 @@ export function WordDisplay({ wordStates, currentWordIdx, currentCharIdx, blind 
   const caretRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const container = containerRef.current;
     const wordsEl = wordsRef.current;
     const caret = caretRef.current;
-    if (!container || !wordsEl || !caret) return;
+    if (!wordsEl || !caret) return;
 
     const wordEls = wordsEl.querySelectorAll<HTMLElement>("[data-word]");
     const curWordEl = wordEls[currentWordIdx];
     if (!curWordEl) return;
     const charEls = curWordEl.querySelectorAll<HTMLElement>("[data-char]");
-    const containerRect = container.getBoundingClientRect();
 
     let left: number;
-    let top: number;
+    let rawTop: number; // offsetTop/offsetLeft ignore the container's transform, unlike
+    // getBoundingClientRect - reading position this way, then applying the same scroll
+    // math to both the caret and the words block, is what keeps them moving in lockstep
+    // instead of the caret momentarily lagging a stale (pre-scroll) position on wrap.
     let lineHeight = 44;
 
     if (currentCharIdx < charEls.length) {
-      const r = charEls[currentCharIdx].getBoundingClientRect();
-      left = r.left - containerRect.left;
-      top = r.top - containerRect.top;
-      lineHeight = r.height || lineHeight;
+      const el = charEls[currentCharIdx];
+      left = el.offsetLeft;
+      rawTop = el.offsetTop;
+      lineHeight = el.offsetHeight || lineHeight;
     } else {
       const lastChar = charEls[charEls.length - 1];
-      const r = (lastChar ?? curWordEl).getBoundingClientRect();
-      left = r.right - containerRect.left;
-      top = r.top - containerRect.top;
-      lineHeight = r.height || lineHeight;
+      const el = lastChar ?? curWordEl;
+      left = el.offsetLeft + (lastChar ? el.offsetWidth : 0);
+      rawTop = el.offsetTop;
+      lineHeight = el.offsetHeight || lineHeight;
     }
+
+    const scrollLines = Math.max(0, Math.floor(rawTop / lineHeight) - 1);
+    const top = rawTop - scrollLines * lineHeight;
 
     caret.style.left = `${left}px`;
     caret.style.top = `${top}px`;
-
-    const scrollLines = Math.max(0, Math.floor(top / lineHeight) - 1);
     wordsEl.style.transform = `translateY(-${scrollLines * lineHeight}px)`;
   }, [currentWordIdx, currentCharIdx, wordStates]);
 
@@ -65,9 +67,9 @@ export function WordDisplay({ wordStates, currentWordIdx, currentCharIdx, blind 
     >
       <div
         ref={caretRef}
-        className="absolute top-0 w-[2px] h-[1.35em] bg-accent caret-blink transition-[left,top] duration-100"
+        className="absolute top-0 w-[2px] h-[1.35em] bg-accent caret-blink transition-[left,top] duration-150 ease-out"
       />
-      <div ref={wordsRef} className="transition-transform duration-200">
+      <div ref={wordsRef} className="transition-transform duration-150 ease-out">
         {wordStates.map((word, wi) => (
           <span key={wi} data-word className="inline-block mr-[0.55em]">
             {word.chars.map((c, ci) => {

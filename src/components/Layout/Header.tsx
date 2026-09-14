@@ -16,8 +16,10 @@ const NAV = [
 export function Header() {
   const { user, loading, logout } = useAuth();
   const pathname = usePathname();
+  const showVerifyBanner = !loading && user && !user.isVerified && pathname !== "/verify-email";
 
   return (
+    <>
     <header className="flex items-center justify-between gap-4 flex-wrap px-6 py-4 border-b-2 border-border">
       <Link href="/" className="font-mono font-bold text-lg tracking-tight text-text">
         type<span className="text-accent">flow</span>
@@ -66,5 +68,14 @@ export function Header() {
         )}
       </div>
     </header>
+    {showVerifyBanner && (
+      <div className="flex items-center justify-center gap-2 bg-panel2 border-b-2 border-border px-6 py-2 text-xs font-mono text-dim">
+        Your email isn&apos;t verified yet.
+        <Link href={`/verify-email?email=${encodeURIComponent(user.email)}`} className="text-accent">
+          Verify now
+        </Link>
+      </div>
+    )}
+    </>
   );
 }

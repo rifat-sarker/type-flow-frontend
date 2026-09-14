@@ -5,6 +5,8 @@ export interface AuthUser {
   username: string;
   email: string;
   bestWpm: number;
+  role: "user" | "admin";
+  isVerified: boolean;
 }
 
 export interface TestResultRecord {
