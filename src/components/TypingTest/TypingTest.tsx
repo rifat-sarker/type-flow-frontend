@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTypingEngine, FinishStats } from "@/lib/useTypingEngine";
 import { generateWords, randomQuoteWords } from "@/lib/wordBank";
 import { codeFromKeyboardEvent } from "@/lib/fingerMap";
-import { playKeySound, playErrorSound, playFinishSound } from "@/lib/sound";
+import { playKeySound, playErrorSound, playFinishSound, setSoundType, SoundType } from "@/lib/sound";
 import { WordDisplay } from "./WordDisplay";
 import { KeyboardStage } from "./KeyboardStage";
 import { ResultsPanel } from "./ResultsPanel";
@@ -36,10 +36,14 @@ export function TypingTest() {
   const [showKeyboard, setShowKeyboard] = useState(true);
   const [showHands, setShowHands] = useState(true);
   const [soundOn, setSoundOn] = useState(false);
+  const [soundType, setSoundTypeState] = useState<SoundType>("mechanical");
 
   useEffect(() => {
     try {
       setSoundOn(localStorage.getItem("typeflow_sound") === "1");
+      const savedType = (localStorage.getItem("typeflow_sound_type") as SoundType) ?? "mechanical";
+      setSoundTypeState(savedType);
+      setSoundType(savedType);
     } catch {
       /* ignore */
     }
@@ -52,6 +56,22 @@ export function TypingTest() {
       } catch {
         /* ignore */
       }
+      return next;
+    });
+  }, []);
+
+  const cycleSoundType = useCallback(() => {
+    const types: SoundType[] = ["mechanical", "soft", "off"];
+    setSoundTypeState((prev) => {
+      const next = types[(types.indexOf(prev) + 1) % types.length];
+      setSoundType(next);
+      // auto-enable sound when a type is selected
+      if (next !== "off") setSoundOn(true);
+      else setSoundOn(false);
+      try {
+        localStorage.setItem("typeflow_sound_type", next);
+        localStorage.setItem("typeflow_sound", next !== "off" ? "1" : "0");
+      } catch { /* ignore */ }
       return next;
     });
   }, []);
@@ -227,6 +247,8 @@ export function TypingTest() {
             setShowHands={setShowHands}
             soundOn={soundOn}
             toggleSound={toggleSound}
+            soundType={soundType}
+            cycleSoundType={cycleSoundType}
           />
 
           <div className="h-8 mb-2 font-mono text-accent text-xl font-semibold">
@@ -279,6 +301,8 @@ interface ConfigBarProps {
   setShowHands: (b: boolean) => void;
   soundOn: boolean;
   toggleSound: () => void;
+  soundType: SoundType;
+  cycleSoundType: () => void;
 }
 
 function ConfigBar(props: ConfigBarProps) {
@@ -286,6 +310,7 @@ function ConfigBar(props: ConfigBarProps) {
     mode, setMode, timeAmount, setTimeAmount, wordsAmount, setWordsAmount,
     numbers, setNumbers, punctuation, setPunctuation, blind, setBlind,
     showKeyboard, setShowKeyboard, showHands, setShowHands, soundOn, toggleSound,
+    soundType, cycleSoundType,
   } = props;
 
   const tab = (active: boolean) =>
@@ -341,8 +366,12 @@ function ConfigBar(props: ConfigBarProps) {
         <button className={tab(blind)} onClick={() => setBlind(!blind)}>
           blind
         </button>
-        <button className={tab(soundOn)} onClick={toggleSound}>
-          sound
+        <button
+          className={tab(soundOn)}
+          onClick={cycleSoundType}
+          title={`Sound: ${soundType} (click to cycle)`}
+        >
+          🔊 {soundType === "mechanical" ? "mech" : soundType === "soft" ? "soft" : "off"}
         </button>
       </div>
     </div>

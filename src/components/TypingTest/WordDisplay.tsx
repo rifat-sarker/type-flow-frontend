@@ -17,11 +17,18 @@ const STATUS_CLASS: Record<CharStatus, string> = {
   missed: "text-dim/60 underline decoration-dotted",
 };
 
-export function WordDisplay({ wordStates, currentWordIdx, currentCharIdx, blind = false }: WordDisplayProps) {
+export function WordDisplay({
+  wordStates,
+  currentWordIdx,
+  currentCharIdx,
+  blind = false,
+}: WordDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wordsRef = useRef<HTMLDivElement>(null);
   const caretRef = useRef<HTMLDivElement>(null);
+  const prevStatusRef = useRef<Map<string, CharStatus>>(new Map());
 
+  // Smooth caret + word scroll positioning
   useEffect(() => {
     const wordsEl = wordsRef.current;
     const caret = caretRef.current;
@@ -33,10 +40,7 @@ export function WordDisplay({ wordStates, currentWordIdx, currentCharIdx, blind 
     const charEls = curWordEl.querySelectorAll<HTMLElement>("[data-char]");
 
     let left: number;
-    let rawTop: number; // offsetTop/offsetLeft ignore the container's transform, unlike
-    // getBoundingClientRect - reading position this way, then applying the same scroll
-    // math to both the caret and the words block, is what keeps them moving in lockstep
-    // instead of the caret momentarily lagging a stale (pre-scroll) position on wrap.
+    let rawTop: number;
     let lineHeight = 44;
 
     if (currentCharIdx < charEls.length) {
@@ -60,27 +64,95 @@ export function WordDisplay({ wordStates, currentWordIdx, currentCharIdx, blind 
     wordsEl.style.transform = `translateY(-${scrollLines * lineHeight}px)`;
   }, [currentWordIdx, currentCharIdx, wordStates]);
 
+  // Animate chars that just changed status
+  useEffect(() => {
+    const wordsEl = wordsRef.current;
+    if (!wordsEl) return;
+
+    const wordEls = wordsEl.querySelectorAll<HTMLElement>("[data-word]");
+    wordStates.forEach((word, wi) => {
+      const wordEl = wordEls[wi];
+      if (!wordEl) return;
+      const charEls = wordEl.querySelectorAll<HTMLElement>("[data-char]");
+      word.chars.forEach((c, ci) => {
+        const key = `${wi}-${ci}`;
+        const prev = prevStatusRef.current.get(key);
+        const el = charEls[ci];
+        if (!el) return;
+
+        if (prev !== c.status) {
+          // Remove existing animation classes first
+          el.classList.remove("char-correct-anim", "char-error-anim");
+
+          if (c.status === "correct" && prev === "pending") {
+            // Trigger correct animation
+            void el.offsetWidth; // force reflow
+            el.classList.add("char-correct-anim");
+          } else if (c.status === "incorrect" && prev === "pending") {
+            // Trigger error shake
+            void el.offsetWidth;
+            el.classList.add("char-error-anim");
+            setTimeout(() => el.classList.remove("char-error-anim"), 130);
+          }
+
+          prevStatusRef.current.set(key, c.status);
+        }
+      });
+    });
+  }, [wordStates]);
+
   return (
     <div
       ref={containerRef}
-      className="relative w-full max-w-3xl mx-auto font-mono text-2xl leading-[1.7] tracking-wide overflow-hidden h-[132px] select-none"
+      className="relative w-full max-w-3xl mx-auto typing-font text-2xl leading-[1.75] tracking-wide overflow-hidden h-[132px] select-none"
     >
+      {/* Smooth caret — no blink while typing, blinks at rest */}
       <div
         ref={caretRef}
-        className="absolute top-0 w-[2px] h-[1.35em] bg-accent caret-blink transition-[left,top] duration-150 ease-out"
+        className="absolute top-0 w-[2.5px] rounded-full h-[1.3em] bg-accent caret-blink"
+        style={{
+          transition: "left 65ms cubic-bezier(0.22,1,0.36,1), top 80ms cubic-bezier(0.22,1,0.36,1)",
+          boxShadow: "0 0 6px rgba(var(--c-accent),0.5)",
+        }}
       />
-      <div ref={wordsRef} className="transition-transform duration-150 ease-out">
+
+      {/* Fade edges for scroll effect */}
+      <div
+        className="absolute top-0 left-0 right-0 pointer-events-none z-10"
+        style={{ height: 8, background: "linear-gradient(to bottom, rgb(var(--c-bg)), transparent)" }}
+      />
+      <div
+        className="absolute bottom-0 left-0 right-0 pointer-events-none z-10"
+        style={{ height: 16, background: "linear-gradient(to top, rgb(var(--c-bg)), transparent)" }}
+      />
+
+      <div
+        ref={wordsRef}
+        style={{ transition: "transform 160ms cubic-bezier(0.22,1,0.36,1)" }}
+      >
         {wordStates.map((word, wi) => (
-          <span key={wi} data-word className="inline-block mr-[0.55em]">
+          <span
+            key={wi}
+            data-word
+            className={`inline-block mr-[0.6em] ${wi < currentWordIdx && word.chars.some((c) => c.status === "incorrect") ? "underline decoration-danger/40 underline-offset-2 decoration-dotted" : ""}`}
+          >
             {word.chars.map((c, ci) => {
-              const effective: CharStatus = blind && c.status === "incorrect" ? "correct" : c.status;
+              const effective: CharStatus =
+                blind && c.status === "incorrect" ? "correct" : c.status;
               return (
-                <span key={ci} data-char className={STATUS_CLASS[effective]}>
+                <span
+                  key={ci}
+                  data-char
+                  className={STATUS_CLASS[effective]}
+                  style={{ transition: "color 60ms ease" }}
+                >
                   {c.char}
                 </span>
               );
             })}
-            {word.extra && <span className="text-danger/60">{word.extra}</span>}
+            {word.extra && (
+              <span className="text-danger/60">{word.extra}</span>
+            )}
           </span>
         ))}
       </div>
