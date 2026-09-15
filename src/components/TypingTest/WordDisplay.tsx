@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { WordState, CharStatus } from "@/lib/useTypingEngine";
 
 interface WordDisplayProps {
@@ -28,8 +28,16 @@ export function WordDisplay({
   const caretRef = useRef<HTMLDivElement>(null);
   const prevStatusRef = useRef<Map<string, CharStatus>>(new Map());
 
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Smooth caret + word scroll positioning
   useEffect(() => {
+    // Stop blinking while typing
+    setIsTyping(true);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 500);
+
     const wordsEl = wordsRef.current;
     const caret = caretRef.current;
     if (!wordsEl || !caret) return;
@@ -109,9 +117,9 @@ export function WordDisplay({
       {/* Smooth caret — no blink while typing, blinks at rest */}
       <div
         ref={caretRef}
-        className="absolute top-0 w-[2.5px] rounded-full h-[1.3em] bg-accent caret-blink"
+        className={`absolute top-0 w-[2.5px] rounded-full h-[1.3em] bg-accent ${!isTyping ? "caret-blink" : ""}`}
         style={{
-          transition: "left 65ms cubic-bezier(0.22,1,0.36,1), top 80ms cubic-bezier(0.22,1,0.36,1)",
+          transition: "left 100ms ease-out, top 100ms ease-out",
           boxShadow: "0 0 6px rgba(var(--c-accent),0.5)",
         }}
       />
