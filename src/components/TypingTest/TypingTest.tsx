@@ -282,11 +282,7 @@ export function TypingTest() {
             </Button>
           </div>
 
-          <KeyboardStage
-            pressedCode={pressedCode}
-            pressId={pressId}
-            showKeyboard={showKeyboard}
-          />
+          {/* Keyboard is temporarily hidden as requested */}
         </>
       ) : (
         <ResultsPanel stats={finishStats} wpmSamples={wpmSamples} onRestart={restart} />

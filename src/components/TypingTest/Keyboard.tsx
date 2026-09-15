@@ -126,7 +126,6 @@ export function Keyboard({ pressedCode, pressId }: KeyboardProps) {
             // Magic Keyboard press effect: key depresses slightly
             const translateY = isAnim ? 1.5 : 0;
             
-            // Modifier keys have different label positioning in mac
             const isModifier = label.length > 1;
 
             return (
@@ -162,6 +161,9 @@ export function Keyboard({ pressedCode, pressId }: KeyboardProps) {
                   fontWeight={isModifier ? "400" : "500"}
                   letterSpacing={isModifier ? "0" : "0.5"}
                   fill={isActive ? "#444444" : "#555555"}
+                  style={{
+                    transition: "fill 100ms ease",
+                  }}
                 >
                   {label}
                 </text>
