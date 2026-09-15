@@ -10,7 +10,6 @@ import { getGuestId } from "@/lib/guest";
 import { useTypingEngine } from "@/lib/useTypingEngine";
 import { codeFromKeyboardEvent } from "@/lib/fingerMap";
 import { WordDisplay } from "@/components/TypingTest/WordDisplay";
-import { KeyboardStage } from "@/components/TypingTest/KeyboardStage";
 import { PlayerProgressBar } from "./PlayerProgressBar";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -361,7 +360,6 @@ export function RaceTrack({ code }: RaceTrackProps) {
               currentCharIdx={engine.currentCharIdx}
             />
           </div>
-          <KeyboardStage pressedCode={pressedCode} pressId={pressId} showKeyboard />
         </>
       )}
 

@@ -6,12 +6,14 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { ThemePicker } from "./ThemePicker";
+import { OnlineCount } from "./OnlineCount";
 
 const NAV = [
   { href: "/", label: "type" },
   { href: "/lessons", label: "learn" },
   { href: "/leaderboard", label: "leaderboard" },
   { href: "/dashboard", label: "stats" },
+  { href: "/badges", label: "badges" },
   { href: "/race/create", label: "race" },
 ];
 
@@ -44,6 +46,7 @@ export function Header() {
       </nav>
 
       <div className="flex items-center gap-2">
+        <OnlineCount />
         <ThemePicker />
         {loading ? null : user ? (
           <>

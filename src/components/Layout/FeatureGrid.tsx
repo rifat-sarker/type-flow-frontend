@@ -17,8 +17,10 @@ const FEATURES: Feature[] = [
     body: "Easy for short common words, medium for everyday vocabulary, hard for long words with capitals and punctuation mixed in.",
   },
   {
-    title: "On-screen keyboard",
-    body: "A full keyboard lights up every key as you hit it, so you can learn the layout without looking down at your hands.",
+    title: "Guided course",
+    body: "11 progressive lessons from the home row to the full keyboard, each gated on 90% accuracy so you build real muscle memory.",
+    href: "/lessons",
+    cta: "Start learning",
   },
   {
     title: "Keystroke sounds",
@@ -53,6 +55,16 @@ const FEATURES: Feature[] = [
   {
     title: "Detailed results",
     body: "WPM, raw WPM, accuracy, consistency, a character breakdown and a WPM-over-time graph after every test.",
+  },
+  {
+    title: "Badges & streaks",
+    body: "Unlock 17 badges for speed, accuracy, volume, finishing the course and practising day after day. Your daily streak keeps you honest.",
+    href: "/badges",
+    cta: "See badges",
+  },
+  {
+    title: "Live community",
+    body: "See how many people are practising right now, race them, and climb the leaderboard.",
   },
   {
     title: "4 themes",

@@ -7,7 +7,6 @@ import { Lesson, generateLessonWords, LESSONS } from "@/lib/lessons";
 import { codeFromKeyboardEvent } from "@/lib/fingerMap";
 import { playKeySound, playErrorSound, playFinishSound } from "@/lib/sound";
 import { WordDisplay } from "@/components/TypingTest/WordDisplay";
-import { KeyboardStage } from "@/components/TypingTest/KeyboardStage";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
@@ -189,8 +188,6 @@ export function LessonRunner({ lesson }: { lesson: Lesson }) {
           Restart (tab)
         </Button>
       </div>
-
-      <KeyboardStage pressedCode={pressedCode} pressId={pressId} showKeyboard />
     </div>
   );
 }

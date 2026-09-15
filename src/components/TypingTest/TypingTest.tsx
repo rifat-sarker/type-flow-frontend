@@ -6,11 +6,12 @@ import { generateWords, randomQuoteWords, Difficulty } from "@/lib/wordBank";
 import { codeFromKeyboardEvent } from "@/lib/fingerMap";
 import { playKeySound, playErrorSound, playFinishSound, setSoundType, SoundType } from "@/lib/sound";
 import { WordDisplay } from "./WordDisplay";
-import { KeyboardStage } from "./KeyboardStage";
 import { ResultsPanel } from "./ResultsPanel";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
+import { BadgeInfo } from "@/components/ui/BadgeCard";
+import { BadgeUnlock } from "@/components/ui/BadgeUnlock";
 
 type Mode = "time" | "words" | "quote" | "zen" | "custom";
 
@@ -45,7 +46,6 @@ export function TypingTest() {
   const [blind, setBlind] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const [customText, setCustomText] = useState("");
-  const [showKeyboard, setShowKeyboard] = useState(true);
   const [soundOn, setSoundOn] = useState(false);
   const [soundType, setSoundTypeState] = useState<SoundType>("mechanical");
 
@@ -108,6 +108,8 @@ export function TypingTest() {
   const [liveWpm, setLiveWpm] = useState(0);
   const [finishStats, setFinishStats] = useState<FinishStats | null>(null);
   const [wpmSamples, setWpmSamples] = useState<number[]>([]);
+  const [earnedBadges, setEarnedBadges] = useState<BadgeInfo[]>([]);
+  const [streakDays, setStreakDays] = useState<number | null>(null);
 
   const [pressedCode, setPressedCode] = useState<string | null>(null);
   const [pressId, setPressId] = useState(0);
@@ -125,6 +127,7 @@ export function TypingTest() {
     setLiveWpm(0);
     setFinishStats(null);
     setWpmSamples([]);
+    setEarnedBadges([]);
     savedRef.current = false;
     if (tickRef.current) clearInterval(tickRef.current);
   }, [mode, timeAmount, wordsAmount, numbers, punctuation, difficulty, customText, reset]);
@@ -191,7 +194,15 @@ export function TypingTest() {
 
     if (user) {
       api
-        .post("/api/results", { mode, amount: mode === "time" ? timeAmount : wordsAmount, ...stats })
+        .post<{ earnedBadges?: BadgeInfo[]; streakDays?: number }>("/api/results", {
+          mode,
+          amount: mode === "time" ? timeAmount : wordsAmount,
+          ...stats,
+        })
+        .then((d) => {
+          if (d.earnedBadges?.length) setEarnedBadges(d.earnedBadges);
+          if (typeof d.streakDays === "number") setStreakDays(d.streakDays);
+        })
         .catch(() => {
           /* non-fatal: this result just won't sync this time */
         });
@@ -260,8 +271,6 @@ export function TypingTest() {
             setBlind={setBlind}
             difficulty={difficulty}
             setDifficulty={setDifficulty}
-            showKeyboard={showKeyboard}
-            setShowKeyboard={setShowKeyboard}
             soundOn={soundOn}
             toggleSound={toggleSound}
             soundType={soundType}
@@ -305,10 +314,12 @@ export function TypingTest() {
             </Button>
           </div>
 
-          {/* Keyboard is temporarily hidden as requested */}
         </>
       ) : (
-        <ResultsPanel stats={finishStats} wpmSamples={wpmSamples} onRestart={restart} />
+        <>
+          <ResultsPanel stats={finishStats} wpmSamples={wpmSamples} onRestart={restart} />
+          <BadgeUnlock badges={earnedBadges} streakDays={streakDays} />
+        </>
       )}
     </div>
   );
@@ -329,8 +340,6 @@ interface ConfigBarProps {
   setBlind: (b: boolean) => void;
   difficulty: Difficulty;
   setDifficulty: (d: Difficulty) => void;
-  showKeyboard: boolean;
-  setShowKeyboard: (b: boolean) => void;
   soundOn: boolean;
   toggleSound: () => void;
   soundType: SoundType;
@@ -342,7 +351,7 @@ function ConfigBar(props: ConfigBarProps) {
     mode, setMode, timeAmount, setTimeAmount, wordsAmount, setWordsAmount,
     numbers, setNumbers, punctuation, setPunctuation, blind, setBlind,
     difficulty, setDifficulty,
-    showKeyboard, setShowKeyboard, soundOn, toggleSound,
+    soundOn, toggleSound,
     soundType, cycleSoundType,
   } = props;
 
@@ -413,9 +422,6 @@ function ConfigBar(props: ConfigBarProps) {
       </div>
       <div className="w-px h-5 bg-border" />
       <div className="flex gap-1">
-        <button className={tab(showKeyboard)} onClick={() => setShowKeyboard(!showKeyboard)}>
-          keyboard
-        </button>
         <button className={tab(blind)} onClick={() => setBlind(!blind)}>
           blind
         </button>
