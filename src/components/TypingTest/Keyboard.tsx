@@ -77,17 +77,18 @@ export function Keyboard({ pressedCode, pressId }: KeyboardProps) {
         border: "1px solid rgba(255,255,255,0.4)",
         userSelect: "none",
         position: "relative",
-        width: "fit-content",
         margin: "0 auto",
-        maxWidth: "100%", // Prevent CSS from squishing the width
-        overflowX: "auto" // Allow scrolling on very small screens instead of cutting off
+        maxWidth: svgW + 36, // keyboard width + this wrapper's own padding
       }}
     >
+      {/* Sized by viewBox rather than fixed width/height, so the whole keyboard
+          scales down to fit narrower containers (e.g. the race page) instead of
+          spilling past the right edge. */}
       <svg
-        width={svgW}
-        height={svgH}
+        width="100%"
         viewBox={`0 0 ${svgW} ${svgH}`}
-        style={{ display: "block", overflow: "visible" }}
+        preserveAspectRatio="xMidYMid meet"
+        style={{ display: "block", overflow: "visible", aspectRatio: `${svgW} / ${svgH}` }}
       >
         <defs>
           <filter id="keyShadow" x="-10%" y="-10%" width="120%" height="130%">

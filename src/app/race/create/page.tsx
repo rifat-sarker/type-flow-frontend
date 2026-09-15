@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { RaceRecord } from "@/types";
@@ -17,9 +18,8 @@ export default function CreateRacePage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!loading && !user) router.push("/login");
-  }, [loading, user, router]);
+  // No auto-redirect: bouncing a logged-out visitor straight to /login made this
+  // page look broken. Explain what racing is and let them choose instead.
 
   async function createRace() {
     setCreating(true);
@@ -33,7 +33,32 @@ export default function CreateRacePage() {
     }
   }
 
-  if (loading || !user) return null;
+  if (loading) return null;
+
+  if (!user) {
+    return (
+      <div className="max-w-md">
+        <h1 className="font-mono text-2xl font-bold mb-2">Race a friend</h1>
+        <p className="text-dim text-sm mb-6">
+          Create a room, share the invite link, and type against each other live with
+          real-time progress bars, a 3-2-1 countdown, in-race chat and final standings.
+        </p>
+        <p className="text-dim text-sm mb-8">
+          You need an account to <span className="text-text">create</span> a race — but
+          anyone can <span className="text-text">join</span> one as a guest from an invite
+          link, no signup needed.
+        </p>
+        <div className="flex gap-2">
+          <Link href="/login">
+            <Button>Log in to create</Button>
+          </Link>
+          <Link href="/register">
+            <Button variant="secondary">Sign up</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md">

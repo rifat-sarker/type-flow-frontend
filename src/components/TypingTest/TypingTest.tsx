@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTypingEngine, FinishStats } from "@/lib/useTypingEngine";
-import { generateWords, randomQuoteWords } from "@/lib/wordBank";
+import { generateWords, randomQuoteWords, Difficulty } from "@/lib/wordBank";
 import { codeFromKeyboardEvent } from "@/lib/fingerMap";
 import { playKeySound, playErrorSound, playFinishSound, setSoundType, SoundType } from "@/lib/sound";
 import { WordDisplay } from "./WordDisplay";
@@ -17,11 +17,19 @@ type Mode = "time" | "words" | "quote" | "zen";
 const TIME_OPTIONS = [15, 30, 60, 120];
 const WORD_OPTIONS = [10, 25, 50, 100];
 
-function buildWords(mode: Mode, wordsAmount: number, numbers: boolean, punctuation: boolean): string[] {
+const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
+
+function buildWords(
+  mode: Mode,
+  wordsAmount: number,
+  numbers: boolean,
+  punctuation: boolean,
+  difficulty: Difficulty
+): string[] {
   if (mode === "quote") return randomQuoteWords();
-  if (mode === "words") return generateWords(wordsAmount, numbers, punctuation);
-  if (mode === "zen") return generateWords(40, numbers, punctuation);
-  return generateWords(60, numbers, punctuation); // time mode: generous starting buffer
+  if (mode === "words") return generateWords(wordsAmount, numbers, punctuation, difficulty);
+  if (mode === "zen") return generateWords(40, numbers, punctuation, difficulty);
+  return generateWords(60, numbers, punctuation, difficulty); // time mode: generous starting buffer
 }
 
 export function TypingTest() {
@@ -33,8 +41,8 @@ export function TypingTest() {
   const [numbers, setNumbers] = useState(false);
   const [punctuation, setPunctuation] = useState(false);
   const [blind, setBlind] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [showKeyboard, setShowKeyboard] = useState(true);
-  const [showHands, setShowHands] = useState(true);
   const [soundOn, setSoundOn] = useState(false);
   const [soundType, setSoundTypeState] = useState<SoundType>("mechanical");
 
@@ -63,7 +71,13 @@ export function TypingTest() {
   const cycleSoundType = useCallback(() => {
     const types: SoundType[] = ["mechanical", "soft", "off"];
     setSoundTypeState((prev) => {
-      const next = types[(types.indexOf(prev) + 1) % types.length];
+      // When muted, the first click should switch the current type on rather than
+      // skipping past it (otherwise "off" -> click -> "soft" hides mechanical).
+      const next = soundOnRef.current
+        ? types[(types.indexOf(prev) + 1) % types.length]
+        : prev === "off"
+        ? "mechanical"
+        : prev;
       setSoundType(next);
       // auto-enable sound when a type is selected
       if (next !== "off") setSoundOn(true);
@@ -101,7 +115,7 @@ export function TypingTest() {
   const { reset, appendWords, typeChar, backspace, finish, sampleWpm, computeFinishStats } = engine;
 
   const restart = useCallback(() => {
-    const w = buildWords(mode, wordsAmount, numbers, punctuation);
+    const w = buildWords(mode, wordsAmount, numbers, punctuation, difficulty);
     setWords(w);
     reset(w);
     setTimeLeft(timeAmount);
@@ -110,14 +124,14 @@ export function TypingTest() {
     setWpmSamples([]);
     savedRef.current = false;
     if (tickRef.current) clearInterval(tickRef.current);
-  }, [mode, timeAmount, wordsAmount, numbers, punctuation, reset]);
+  }, [mode, timeAmount, wordsAmount, numbers, punctuation, difficulty, reset]);
 
   // rebuild the word list whenever mode/config changes
   useEffect(() => {
     restart();
-    // restart's own deps already cover mode/timeAmount/wordsAmount/numbers/punctuation
+    // restart's own deps already cover mode/timeAmount/wordsAmount/numbers/punctuation/difficulty
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, timeAmount, wordsAmount, numbers, punctuation]);
+  }, [mode, timeAmount, wordsAmount, numbers, punctuation, difficulty]);
 
   const finishTest = useCallback(() => finish(), [finish]);
 
@@ -125,11 +139,11 @@ export function TypingTest() {
   useEffect(() => {
     if (mode !== "time") return;
     if (words.length - engine.currentWordIdx < 15) {
-      const more = generateWords(30, numbers, punctuation);
+      const more = generateWords(30, numbers, punctuation, difficulty);
       appendWords(more);
       setWords((prev) => prev.concat(more));
     }
-  }, [mode, words.length, engine.currentWordIdx, numbers, punctuation, appendWords]);
+  }, [mode, words.length, engine.currentWordIdx, numbers, punctuation, difficulty, appendWords]);
 
   // per-second sampling + countdown while a test is in progress
   useEffect(() => {
@@ -241,10 +255,10 @@ export function TypingTest() {
             setPunctuation={setPunctuation}
             blind={blind}
             setBlind={setBlind}
+            difficulty={difficulty}
+            setDifficulty={setDifficulty}
             showKeyboard={showKeyboard}
             setShowKeyboard={setShowKeyboard}
-            showHands={showHands}
-            setShowHands={setShowHands}
             soundOn={soundOn}
             toggleSound={toggleSound}
             soundType={soundType}
@@ -272,7 +286,6 @@ export function TypingTest() {
             pressedCode={pressedCode}
             pressId={pressId}
             showKeyboard={showKeyboard}
-            showHands={showHands}
           />
         </>
       ) : (
@@ -295,10 +308,10 @@ interface ConfigBarProps {
   setPunctuation: (b: boolean) => void;
   blind: boolean;
   setBlind: (b: boolean) => void;
+  difficulty: Difficulty;
+  setDifficulty: (d: Difficulty) => void;
   showKeyboard: boolean;
   setShowKeyboard: (b: boolean) => void;
-  showHands: boolean;
-  setShowHands: (b: boolean) => void;
   soundOn: boolean;
   toggleSound: () => void;
   soundType: SoundType;
@@ -309,7 +322,8 @@ function ConfigBar(props: ConfigBarProps) {
   const {
     mode, setMode, timeAmount, setTimeAmount, wordsAmount, setWordsAmount,
     numbers, setNumbers, punctuation, setPunctuation, blind, setBlind,
-    showKeyboard, setShowKeyboard, showHands, setShowHands, soundOn, toggleSound,
+    difficulty, setDifficulty,
+    showKeyboard, setShowKeyboard, soundOn, toggleSound,
     soundType, cycleSoundType,
   } = props;
 
@@ -348,6 +362,25 @@ function ConfigBar(props: ConfigBarProps) {
       )}
       <div className="w-px h-5 bg-border" />
       <div className="flex gap-1">
+        {DIFFICULTIES.map((d) => (
+          <button
+            key={d}
+            className={tab(difficulty === d)}
+            onClick={() => setDifficulty(d)}
+            title={
+              d === "easy"
+                ? "Short, common words"
+                : d === "medium"
+                ? "Everyday vocabulary"
+                : "Long words + capitals & punctuation"
+            }
+          >
+            {d}
+          </button>
+        ))}
+      </div>
+      <div className="w-px h-5 bg-border" />
+      <div className="flex gap-1">
         <button className={tab(punctuation)} onClick={() => setPunctuation(!punctuation)}>
           @ punctuation
         </button>
@@ -360,18 +393,18 @@ function ConfigBar(props: ConfigBarProps) {
         <button className={tab(showKeyboard)} onClick={() => setShowKeyboard(!showKeyboard)}>
           keyboard
         </button>
-        <button className={tab(showHands)} onClick={() => setShowHands(!showHands)}>
-          hands
-        </button>
         <button className={tab(blind)} onClick={() => setBlind(!blind)}>
           blind
         </button>
         <button
           className={tab(soundOn)}
           onClick={cycleSoundType}
-          title={`Sound: ${soundType} (click to cycle)`}
+          title="Click to cycle: mechanical → soft → off"
         >
-          🔊 {soundType === "mechanical" ? "mech" : soundType === "soft" ? "soft" : "off"}
+          {/* Label has to follow soundOn, not just soundType - otherwise it reads
+              "mech" while sound is actually muted. */}
+          {soundOn ? "🔊" : "🔇"}{" "}
+          {!soundOn ? "off" : soundType === "mechanical" ? "mech" : "soft"}
         </button>
       </div>
     </div>

@@ -344,12 +344,24 @@ export function RaceTrack({ code }: RaceTrackProps) {
         </p>
       ) : (
         <>
-          <WordDisplay
-            wordStates={engine.wordStates}
-            currentWordIdx={engine.currentWordIdx}
-            currentCharIdx={engine.currentCharIdx}
-          />
-          <KeyboardStage pressedCode={pressedCode} pressId={pressId} showKeyboard showHands />
+          {/* Keystrokes are ignored until the race actually starts, so say so -
+              otherwise the visible text invites typing that silently does nothing. */}
+          {status === "waiting" && (
+            <div className="mb-4 border-2 border-border bg-panel2 px-4 py-3 font-mono text-sm text-dim">
+              {isHost
+                ? "Typing is locked until you press Start race above."
+                : "Waiting for the host to start the race..."}
+            </div>
+          )}
+
+          <div className={status === "waiting" ? "opacity-40" : undefined}>
+            <WordDisplay
+              wordStates={engine.wordStates}
+              currentWordIdx={engine.currentWordIdx}
+              currentCharIdx={engine.currentCharIdx}
+            />
+          </div>
+          <KeyboardStage pressedCode={pressedCode} pressId={pressId} showKeyboard />
         </>
       )}
 

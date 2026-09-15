@@ -1,108 +1,98 @@
 "use client";
 
-// ─── Realistic mechanical keyboard sounds via Web Audio API ───────────────────
-// Simulates a physical key press using layered noise bursts + filtered transients.
-// No audio assets needed — fully synthesized.
+// ─── Keyboard click sounds, synthesized via Web Audio (no audio assets) ───────
+// A real key click is almost entirely broadband noise with a very fast decay -
+// it has no sustained pitch. Earlier versions layered square-wave oscillators on
+// top, which is what made them sound like electronic beeps instead of plastic.
+// So: noise through a resonant filter, steep envelope, two short events
+// (the press "tick" and the quieter bottom-out "thock").
 
 let ctx: AudioContext | null = null;
+let noiseBuffer: AudioBuffer | null = null;
 
 function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
   const AC =
     window.AudioContext ||
-    (window as unknown as { webkitAudioContext?: typeof AudioContext })
-      .webkitAudioContext;
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AC) return null;
   if (!ctx) ctx = new AC();
-  if (ctx.state === "suspended") ctx.resume();
+  if (ctx.state === "suspended") void ctx.resume();
   return ctx;
 }
 
-// ─── Low-level helpers ────────────────────────────────────────────────────────
-
-/** White noise burst filtered to a specific frequency band — core of the click */
-function noiseClick(
-  audio: AudioContext,
-  startTime: number,
-  durationMs: number,
-  lowHz: number,
-  highHz: number,
-  gain: number
-) {
-  const bufLen = Math.ceil((audio.sampleRate * durationMs) / 1000);
-  const buffer = audio.createBuffer(1, bufLen, audio.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1;
-
-  const source = audio.createBufferSource();
-  source.buffer = buffer;
-
-  const bandpass = audio.createBiquadFilter();
-  bandpass.type = "bandpass";
-  bandpass.frequency.value = (lowHz + highHz) / 2;
-  bandpass.Q.value = (lowHz + highHz) / 2 / (highHz - lowHz);
-
-  const gainNode = audio.createGain();
-  gainNode.gain.setValueAtTime(gain, startTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + durationMs / 1000);
-
-  source.connect(bandpass).connect(gainNode).connect(audio.destination);
-  source.start(startTime);
-  source.stop(startTime + durationMs / 1000 + 0.01);
+/** One second of white noise, generated once and reused for every click. */
+function getNoise(audio: AudioContext): AudioBuffer {
+  if (!noiseBuffer) {
+    const len = audio.sampleRate;
+    noiseBuffer = audio.createBuffer(1, len, audio.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuffer;
 }
 
-/** A short tonal transient — adds the "clicky" pitched component */
-function toneTransient(
-  audio: AudioContext,
-  startTime: number,
-  freq: number,
-  durationMs: number,
-  gain: number,
-  type: OscillatorType = "sine"
-) {
-  const osc = audio.createOscillator();
-  const gainNode = audio.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, startTime);
-  osc.frequency.exponentialRampToValueAtTime(freq * 0.5, startTime + durationMs / 1000);
-  gainNode.gain.setValueAtTime(gain, startTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + durationMs / 1000);
-  osc.connect(gainNode).connect(audio.destination);
-  osc.start(startTime);
-  osc.stop(startTime + durationMs / 1000 + 0.01);
+interface ClickOpts {
+  /** Filter centre in Hz - high = sharp tick, low = dull thock. */
+  freq: number;
+  /** Resonance. Higher makes it more "plasticky". */
+  q: number;
+  /** Seconds. Real clicks are 8-40ms. */
+  decay: number;
+  gain: number;
+  /** Offset from `t` in seconds. */
+  delay?: number;
+  type?: BiquadFilterType;
 }
 
-// ─── Sound types ──────────────────────────────────────────────────────────────
+function click(audio: AudioContext, t: number, o: ClickOpts) {
+  const start = t + (o.delay ?? 0);
+  const src = audio.createBufferSource();
+  src.buffer = getNoise(audio);
+  // Random offset into the noise so repeated presses aren't identical.
+  const offset = Math.random() * 0.5;
 
-/** Mechanical clicky key sound — Cherry MX Blue style */
-function mechanicalClick(audio: AudioContext, t: number, pitch = 1.0) {
-  // Initial click transient (high-freq noise burst)
-  noiseClick(audio, t, 8, 3000 * pitch, 8000 * pitch, 0.35);
-  // Body thud (mid-freq)
-  noiseClick(audio, t, 25, 500 * pitch, 1800 * pitch, 0.18);
-  // Pitched click component
-  toneTransient(audio, t, 1100 * pitch, 20, 0.04, "square");
-  // Release thud (slightly delayed)
-  noiseClick(audio, t + 0.045, 12, 300 * pitch, 900 * pitch, 0.08);
+  const filter = audio.createBiquadFilter();
+  filter.type = o.type ?? "bandpass";
+  filter.frequency.value = o.freq;
+  filter.Q.value = o.q;
+
+  const g = audio.createGain();
+  // Near-instant attack, exponential decay - this envelope is what reads as a
+  // physical impact rather than a tone.
+  g.gain.setValueAtTime(0, start);
+  g.gain.linearRampToValueAtTime(o.gain, start + 0.0008);
+  g.gain.exponentialRampToValueAtTime(0.0001, start + o.decay);
+
+  src.connect(filter).connect(g).connect(audio.destination);
+  src.start(start, offset, o.decay + 0.02);
+  src.stop(start + o.decay + 0.02);
 }
 
-/** Soft quiet key — Mac Magic Keyboard / laptop style */
-function softClick(audio: AudioContext, t: number, pitch = 1.0) {
-  // Gentle thud
-  noiseClick(audio, t, 18, 200 * pitch, 1200 * pitch, 0.12);
-  // Very soft high transient
-  noiseClick(audio, t, 6, 2000 * pitch, 5000 * pitch, 0.06);
-  // Subtle tone
-  toneTransient(audio, t, 600 * pitch, 15, 0.018, "sine");
+// ─── Voices ───────────────────────────────────────────────────────────────────
+
+/** Clicky mechanical switch: bright tick, plastic body, quick bottom-out. */
+function mechanicalClick(audio: AudioContext, t: number, p: number) {
+  click(audio, t, { freq: 4200 * p, q: 1.1, decay: 0.012, gain: 0.5 });   // tick
+  click(audio, t, { freq: 1500 * p, q: 2.2, decay: 0.022, gain: 0.32 });  // body
+  click(audio, t, { freq: 420 * p, q: 1.6, decay: 0.03, gain: 0.16 });    // thock
+  click(audio, t, { freq: 900 * p, q: 1.4, decay: 0.016, gain: 0.12, delay: 0.028 }); // bottom-out
 }
 
-/** Error sound — low dull thud */
+/** Laptop / Magic Keyboard: softer, duller, shorter travel. */
+function softClick(audio: AudioContext, t: number, p: number) {
+  click(audio, t, { freq: 2600 * p, q: 0.9, decay: 0.008, gain: 0.2 });
+  click(audio, t, { freq: 700 * p, q: 1.5, decay: 0.018, gain: 0.18 });
+  click(audio, t, { freq: 300 * p, q: 1.2, decay: 0.022, gain: 0.1 });
+}
+
+/** Wrong key: dull low thud, clearly different from a normal press. */
 function errorThud(audio: AudioContext, t: number) {
-  noiseClick(audio, t, 40, 80, 400, 0.2);
-  toneTransient(audio, t, 180, 60, 0.05, "sawtooth");
+  click(audio, t, { freq: 180, q: 1.1, decay: 0.05, gain: 0.34, type: "lowpass" });
+  click(audio, t, { freq: 320, q: 2.0, decay: 0.035, gain: 0.16 });
 }
 
-// ─── Current sound type ───────────────────────────────────────────────────────
+// ─── State ────────────────────────────────────────────────────────────────────
 
 export type SoundType = "mechanical" | "soft" | "off";
 let currentSoundType: SoundType = "mechanical";
@@ -122,13 +112,10 @@ export function playKeySound() {
   const audio = getCtx();
   if (!audio) return;
   const t = audio.currentTime;
-  // Slight random pitch variation so no two keystrokes sound identical
-  const pitch = 0.9 + Math.random() * 0.22;
-  if (currentSoundType === "mechanical") {
-    mechanicalClick(audio, t, pitch);
-  } else {
-    softClick(audio, t, pitch);
-  }
+  // Small pitch jitter so a fast run of keys doesn't sound like a machine gun.
+  const p = 0.93 + Math.random() * 0.16;
+  if (currentSoundType === "mechanical") mechanicalClick(audio, t, p);
+  else softClick(audio, t, p);
 }
 
 export function playErrorSound() {
@@ -143,10 +130,8 @@ export function playFinishSound() {
   const audio = getCtx();
   if (!audio) return;
   const t = audio.currentTime;
-  // Pleasant ascending chord
-  [523, 659, 784, 1047].forEach((f, i) => {
-    const at = t + i * 0.08;
-    toneTransient(audio, at, f, 300, 0.06, "sine");
-    noiseClick(audio, at, 15, f * 0.8, f * 1.5, 0.03);
+  // Short rising run of filtered clicks - a chime, but in the same "physical" voice.
+  [900, 1350, 1800].forEach((f, i) => {
+    click(audio, t, { freq: f, q: 7, decay: 0.16, gain: 0.16, delay: i * 0.075 });
   });
 }

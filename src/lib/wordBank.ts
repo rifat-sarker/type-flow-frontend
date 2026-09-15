@@ -29,25 +29,63 @@ export const QUOTES: string[] = [
 
 const PUNCT_MARKS = [",", ".", "!", "?", ";", ":"];
 
-function randWord(): string {
-  return WORD_BANK[Math.floor(Math.random() * WORD_BANK.length)];
+export type Difficulty = "easy" | "medium" | "hard";
+
+// Longer, less common words that only show up on hard.
+const HARD_EXTRA: string[] = [
+  "acknowledge", "bureaucracy", "conscientious", "disproportionate", "entrepreneurial",
+  "fluorescent", "hypothesis", "inconsequential", "jurisdiction", "kaleidoscope",
+  "labyrinthine", "miscellaneous", "neighbourhood", "onomatopoeia", "perpendicular",
+  "quintessential", "reconnaissance", "simultaneously", "thermodynamics", "unprecedented",
+  "vulnerability", "warehousing", "xylophonist", "yieldingness", "zealousness",
+  "algorithm", "asynchronous", "benchmark", "cryptography", "deprecated",
+  "exponential", "framework", "granularity", "heuristic", "idempotent",
+];
+
+// easy = short + common (finger-friendly), medium = the full everyday bank,
+// hard = everything plus the long/awkward words above.
+function bankFor(difficulty: Difficulty): string[] {
+  if (difficulty === "easy") return WORD_BANK.filter((w) => w.length <= 5);
+  if (difficulty === "hard") return WORD_BANK.concat(HARD_EXTRA);
+  return WORD_BANK;
 }
 
-function decorate(word: string, numbers: boolean, punctuation: boolean): string {
+function randWord(difficulty: Difficulty): string {
+  const bank = bankFor(difficulty);
+  return bank[Math.floor(Math.random() * bank.length)];
+}
+
+function decorate(
+  word: string,
+  numbers: boolean,
+  punctuation: boolean,
+  difficulty: Difficulty
+): string {
   if (numbers && Math.random() < 0.12) {
     return String(Math.floor(Math.random() * 9000) + 100);
   }
   let w = word;
-  if (punctuation) {
-    if (Math.random() < 0.14) w = w[0].toUpperCase() + w.slice(1);
-    if (Math.random() < 0.16) w += PUNCT_MARKS[Math.floor(Math.random() * PUNCT_MARKS.length)];
+  // Hard mixes in capitals/punctuation on its own, so the text stays demanding
+  // even with the toggles off.
+  const capChance = punctuation ? 0.14 : difficulty === "hard" ? 0.12 : 0;
+  const punctChance = punctuation ? 0.16 : difficulty === "hard" ? 0.14 : 0;
+  if (capChance && Math.random() < capChance) w = w[0].toUpperCase() + w.slice(1);
+  if (punctChance && Math.random() < punctChance) {
+    w += PUNCT_MARKS[Math.floor(Math.random() * PUNCT_MARKS.length)];
   }
   return w;
 }
 
-export function generateWords(count: number, numbers = false, punctuation = false): string[] {
+export function generateWords(
+  count: number,
+  numbers = false,
+  punctuation = false,
+  difficulty: Difficulty = "medium"
+): string[] {
   const arr: string[] = [];
-  for (let i = 0; i < count; i++) arr.push(decorate(randWord(), numbers, punctuation));
+  for (let i = 0; i < count; i++) {
+    arr.push(decorate(randWord(difficulty), numbers, punctuation, difficulty));
+  }
   return arr;
 }
 

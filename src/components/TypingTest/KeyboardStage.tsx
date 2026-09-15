@@ -6,23 +6,14 @@ interface KeyboardStageProps {
   pressedCode: string | null;
   pressId: number;
   showKeyboard: boolean;
-  showHands: boolean;
 }
 
-export function KeyboardStage({
-  pressedCode,
-  pressId,
-  showKeyboard,
-  showHands,
-}: KeyboardStageProps) {
+export function KeyboardStage({ pressedCode, pressId, showKeyboard }: KeyboardStageProps) {
   if (!showKeyboard) return null;
 
   return (
     <div className="relative w-full max-w-4xl mx-auto mt-10 hidden md:block">
-      <Keyboard
-        pressedCode={pressedCode}
-        pressId={pressId}
-      />
+      <Keyboard pressedCode={pressedCode} pressId={pressId} />
     </div>
   );
 }
