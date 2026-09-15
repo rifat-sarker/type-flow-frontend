@@ -9,7 +9,9 @@ import { ThemePicker } from "./ThemePicker";
 
 const NAV = [
   { href: "/", label: "type" },
+  { href: "/lessons", label: "learn" },
   { href: "/leaderboard", label: "leaderboard" },
+  { href: "/dashboard", label: "stats" },
   { href: "/race/create", label: "race" },
 ];
 
@@ -46,7 +48,7 @@ export function Header() {
         {loading ? null : user ? (
           <>
             <Link
-              href="/dashboard"
+              href="/settings"
               className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono uppercase tracking-wide border-2 border-border text-dim hover:text-text rounded-none"
             >
               <Avatar username={user.username} size={16} />

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 
-type Mode = "time" | "words" | "quote" | "zen";
+type Mode = "time" | "words" | "quote" | "zen" | "custom";
 
 const TIME_OPTIONS = [15, 30, 60, 120];
 const WORD_OPTIONS = [10, 25, 50, 100];
@@ -24,8 +24,10 @@ function buildWords(
   wordsAmount: number,
   numbers: boolean,
   punctuation: boolean,
-  difficulty: Difficulty
+  difficulty: Difficulty,
+  customText: string
 ): string[] {
+  if (mode === "custom") return customText.trim().split(/\s+/).filter(Boolean);
   if (mode === "quote") return randomQuoteWords();
   if (mode === "words") return generateWords(wordsAmount, numbers, punctuation, difficulty);
   if (mode === "zen") return generateWords(40, numbers, punctuation, difficulty);
@@ -41,7 +43,8 @@ export function TypingTest() {
   const [numbers, setNumbers] = useState(false);
   const [punctuation, setPunctuation] = useState(false);
   const [blind, setBlind] = useState(false);
-  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
+  const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+  const [customText, setCustomText] = useState("");
   const [showKeyboard, setShowKeyboard] = useState(true);
   const [soundOn, setSoundOn] = useState(false);
   const [soundType, setSoundTypeState] = useState<SoundType>("mechanical");
@@ -115,7 +118,7 @@ export function TypingTest() {
   const { reset, appendWords, typeChar, backspace, finish, sampleWpm, computeFinishStats } = engine;
 
   const restart = useCallback(() => {
-    const w = buildWords(mode, wordsAmount, numbers, punctuation, difficulty);
+    const w = buildWords(mode, wordsAmount, numbers, punctuation, difficulty, customText);
     setWords(w);
     reset(w);
     setTimeLeft(timeAmount);
@@ -124,14 +127,14 @@ export function TypingTest() {
     setWpmSamples([]);
     savedRef.current = false;
     if (tickRef.current) clearInterval(tickRef.current);
-  }, [mode, timeAmount, wordsAmount, numbers, punctuation, difficulty, reset]);
+  }, [mode, timeAmount, wordsAmount, numbers, punctuation, difficulty, customText, reset]);
 
   // rebuild the word list whenever mode/config changes
   useEffect(() => {
     restart();
     // restart's own deps already cover mode/timeAmount/wordsAmount/numbers/punctuation/difficulty
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, timeAmount, wordsAmount, numbers, punctuation, difficulty]);
+  }, [mode, timeAmount, wordsAmount, numbers, punctuation, difficulty, customText]);
 
   const finishTest = useCallback(() => finish(), [finish]);
 
@@ -265,6 +268,26 @@ export function TypingTest() {
             cycleSoundType={cycleSoundType}
           />
 
+          {mode === "custom" && (
+            <div className="w-full max-w-3xl mb-4">
+              <label className="block text-xs font-mono uppercase text-dim mb-1.5">
+                Your own text
+              </label>
+              <textarea
+                value={customText}
+                onChange={(e) => setCustomText(e.target.value)}
+                rows={3}
+                placeholder="Paste or type anything you want to practise, then click away and start typing."
+                className="w-full bg-panel2 border-2 border-border text-text placeholder:text-dim px-3 py-2 font-mono text-sm rounded-none focus:outline-none focus:border-accent resize-y"
+              />
+              {!customText.trim() && (
+                <p className="text-dim text-xs font-mono mt-1.5">
+                  Add some text above to start.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="h-8 mb-2 font-mono text-accent text-xl font-semibold">
             {mode === "time" ? timeLeft : mode === "zen" ? `${liveWpm} wpm` : `${liveWpm} wpm`}
           </div>
@@ -333,7 +356,7 @@ function ConfigBar(props: ConfigBarProps) {
   return (
     <div className="flex flex-wrap items-center justify-center gap-2 mb-8 bg-transparent p-2">
       <div className="flex gap-1">
-        {(["time", "words", "quote", "zen"] as Mode[]).map((m) => (
+        {(["time", "words", "quote", "zen", "custom"] as Mode[]).map((m) => (
           <button key={m} className={tab(mode === m)} onClick={() => setMode(m)}>
             {m}
           </button>
@@ -363,7 +386,9 @@ function ConfigBar(props: ConfigBarProps) {
         {DIFFICULTIES.map((d) => (
           <button
             key={d}
-            className={tab(difficulty === d)}
+            // normal-case overrides the shared tab styling's uppercase, so these
+            // read "Easy / Medium / Hard" rather than shouting.
+            className={`${tab(difficulty === d)} normal-case`}
             onClick={() => setDifficulty(d)}
             title={
               d === "easy"
@@ -373,7 +398,7 @@ function ConfigBar(props: ConfigBarProps) {
                 : "Long words + capitals & punctuation"
             }
           >
-            {d}
+            {d.charAt(0).toUpperCase() + d.slice(1)}
           </button>
         ))}
       </div>
