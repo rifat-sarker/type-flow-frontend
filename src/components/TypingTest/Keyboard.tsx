@@ -135,8 +135,8 @@ export function Keyboard({ pressedCode, pressId }: KeyboardProps) {
                 style={{
                   transform: `translateY(${translateY}px)`,
                   transition: isAnim
-                    ? "none"
-                    : "transform 100ms cubic-bezier(0.2, 0.9, 0.3, 1)",
+                    ? "transform 40ms cubic-bezier(0.1, 0.9, 0.2, 1)"
+                    : "transform 140ms cubic-bezier(0.2, 0.9, 0.3, 1)",
                 }}
               >
                 {/* Key face (White plastic) */}
@@ -146,6 +146,9 @@ export function Keyboard({ pressedCode, pressId }: KeyboardProps) {
                   filter={isActive ? "url(#keyPressShadow)" : "url(#keyShadow)"}
                   stroke={isActive ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.8)"}
                   strokeWidth="1"
+                  style={{
+                    transition: "fill 100ms ease, filter 100ms ease, stroke 100ms ease",
+                  }}
                 />
                 
                 {/* Label */}
