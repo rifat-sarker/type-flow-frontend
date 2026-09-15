@@ -14,9 +14,9 @@
   --c-border: 42 43 48;
   --c-text: 237 237 232;
   --c-dim: 117 118 124;
-  --c-accent: 255 75 43;
-  --c-success: 56 214 122;
-  --c-danger: 255 75 110;
+  --c-accent: 235 158 111; /* Soft Peach Orange */
+  --c-success: 153 204 163;
+  --c-danger: 226 109 116; /* Soft Rose Red */
 }
 
 [data-theme="forest"] {
@@ -26,9 +26,9 @@
   --c-border: 36 46 40;
   --c-text: 231 237 230;
   --c-dim: 113 130 118;
-  --c-accent: 68 214 122;
+  --c-accent: 148 204 163; /* Soft Sage Green */
   --c-success: 138 214 90;
-  --c-danger: 255 99 99;
+  --c-danger: 226 109 116;
 }
 
 [data-theme="azure"] {
@@ -38,9 +38,9 @@
   --c-border: 32 42 54;
   --c-text: 227 234 240;
   --c-dim: 116 130 146;
-  --c-accent: 66 165 255;
-  --c-success: 56 214 150;
-  --c-danger: 255 99 118;
+  --c-accent: 122 186 226; /* Soft Sky Blue */
+  --c-success: 135 200 170;
+  --c-danger: 226 109 116;
 }
 
 [data-theme="paper"] {
@@ -50,9 +50,9 @@
   --c-border: 220 220 216;
   --c-text: 26 26 24;
   --c-dim: 116 116 112;
-  --c-accent: 214 62 30;
-  --c-success: 25 140 84;
-  --c-danger: 200 40 70;
+  --c-accent: 189 97 81; /* Soft Terracotta / Muted Coral */
+  --c-success: 60 145 100;
+  --c-danger: 190 75 90;
 }
 
 html,
