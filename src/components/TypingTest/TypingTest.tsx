@@ -324,12 +324,14 @@ function ConfigBar(props: ConfigBarProps) {
   } = props;
 
   const tab = (active: boolean) =>
-    `px-3 py-1.5 text-xs font-mono uppercase tracking-wide border-2 rounded-none transition-colors ${
-      active ? "bg-accent text-bg border-accent" : "bg-panel2 text-dim border-border hover:text-text"
+    `px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+      active 
+        ? "text-accent bg-accent/10" 
+        : "text-dim hover:text-text hover:bg-panel2"
     }`;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-8 bg-panel border-2 border-border p-2">
+    <div className="flex flex-wrap items-center justify-center gap-2 mb-8 bg-transparent p-2">
       <div className="flex gap-1">
         {(["time", "words", "quote", "zen"] as Mode[]).map((m) => (
           <button key={m} className={tab(mode === m)} onClick={() => setMode(m)}>
@@ -337,7 +339,7 @@ function ConfigBar(props: ConfigBarProps) {
           </button>
         ))}
       </div>
-      <div className="w-px h-5 bg-border" />
+      <div className="w-1 h-1 rounded-full bg-border mx-2" />
       {mode === "time" && (
         <div className="flex gap-1">
           {TIME_OPTIONS.map((v) => (
@@ -356,7 +358,7 @@ function ConfigBar(props: ConfigBarProps) {
           ))}
         </div>
       )}
-      <div className="w-px h-5 bg-border" />
+      <div className="w-1 h-1 rounded-full bg-border mx-2" />
       <div className="flex gap-1">
         {DIFFICULTIES.map((d) => (
           <button
@@ -375,7 +377,7 @@ function ConfigBar(props: ConfigBarProps) {
           </button>
         ))}
       </div>
-      <div className="w-px h-5 bg-border" />
+      <div className="w-1 h-1 rounded-full bg-border mx-2" />
       <div className="flex gap-1">
         <button className={tab(punctuation)} onClick={() => setPunctuation(!punctuation)}>
           @ punctuation
