@@ -52,6 +52,9 @@ export function useTypingEngine(initialWords: string[]) {
   const startTimeRef = useRef(0);
   const countsRef = useRef({ correct: 0, incorrect: 0, extra: 0, missed: 0, keystrokes: 0 });
   const wpmSamplesRef = useRef<number[]>([]);
+  // Per-character hit/miss for the whole test, used to find the keys you keep
+  // getting wrong so practice can be weighted toward them.
+  const keyStatsRef = useRef<Record<string, { hits: number; misses: number }>>({});
 
   // Writes go through this instead of the setWordStates(prev => ...) form: React 18
   // Strict Mode invokes updater functions twice to detect impurity, and the old code
@@ -129,6 +132,13 @@ export function useTypingEngine(initialWords: string[]) {
         const status: CharStatus = ch === expected ? "correct" : "incorrect";
         chars[charIdxRef.current] = { ...chars[charIdxRef.current], status };
         countsRef.current[status === "correct" ? "correct" : "incorrect"]++;
+
+        // Blame the key that was *supposed* to be pressed, not the one that was.
+        const key = expected.toLowerCase();
+        const entry = keyStatsRef.current[key] ?? { hits: 0, misses: 0 };
+        if (status === "correct") entry.hits++;
+        else entry.misses++;
+        keyStatsRef.current[key] = entry;
         next[wi] = { ...word, chars };
         commitWordStates(next);
         setCharIdx(charIdxRef.current + 1);
@@ -216,6 +226,7 @@ export function useTypingEngine(initialWords: string[]) {
       startTimeRef.current = 0;
       countsRef.current = { correct: 0, incorrect: 0, extra: 0, missed: 0, keystrokes: 0 };
       wpmSamplesRef.current = [];
+      keyStatsRef.current = {};
     },
     [setWordIdx, setCharIdx, commitWordStates]
   );
@@ -224,7 +235,10 @@ export function useTypingEngine(initialWords: string[]) {
     ? Math.min(100, Math.round((currentWordIdx / wordStates.length) * 100))
     : 0;
 
+  const getKeyStats = useCallback(() => keyStatsRef.current, []);
+
   return {
+    getKeyStats,
     wordStates,
     currentWordIdx,
     currentCharIdx,

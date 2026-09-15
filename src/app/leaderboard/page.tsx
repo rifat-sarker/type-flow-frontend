@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { LeaderboardEntry } from "@/types";
 import { Avatar } from "@/components/ui/Avatar";
+import { useAuth } from "@/lib/auth-context";
 
 const MODES = ["time", "words", "quote"] as const;
 const PERIODS = ["all", "weekly", "daily"] as const;
@@ -14,6 +15,8 @@ const PERIOD_LABEL: Record<(typeof PERIODS)[number], string> = {
 };
 
 export default function LeaderboardPage() {
+  const { user } = useAuth();
+  const [scope, setScope] = useState<"global" | "friends">("global");
   const [mode, setMode] = useState<(typeof MODES)[number]>("time");
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>("all");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -24,17 +27,39 @@ export default function LeaderboardPage() {
     setLoading(true);
     setError(null);
     api
-      .get<{ leaderboard: LeaderboardEntry[] }>(`/api/leaderboard?mode=${mode}&period=${period}&limit=50`)
+      .get<{ leaderboard: LeaderboardEntry[] }>(
+        scope === "friends"
+          ? `/api/friends/leaderboard?mode=${mode}`
+          : `/api/leaderboard?mode=${mode}&period=${period}&limit=50`
+      )
       .then((data) => setEntries(data.leaderboard))
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load leaderboard"))
       .finally(() => setLoading(false));
-  }, [mode, period]);
+  }, [mode, period, scope]);
 
   return (
     <div>
       <h1 className="font-mono text-2xl font-bold mb-6">Leaderboard</h1>
 
       <div className="flex flex-wrap items-center gap-2 mb-8">
+        {user && (
+          <>
+            <div className="flex gap-1">
+              {(["global", "friends"] as const).map((sc) => (
+                <button
+                  key={sc}
+                  onClick={() => setScope(sc)}
+                  className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wide border-2 rounded-none ${
+                    scope === sc ? "bg-accent text-bg border-accent" : "bg-panel2 text-dim border-border hover:text-text"
+                  }`}
+                >
+                  {sc}
+                </button>
+              ))}
+            </div>
+            <div className="w-px h-5 bg-border" />
+          </>
+        )}
         <div className="flex gap-1">
           {MODES.map((m) => (
             <button

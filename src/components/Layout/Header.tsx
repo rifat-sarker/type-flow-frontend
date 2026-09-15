@@ -11,9 +11,11 @@ import { OnlineCount } from "./OnlineCount";
 const NAV = [
   { href: "/", label: "type" },
   { href: "/lessons", label: "learn" },
+  { href: "/practice", label: "drill" },
   { href: "/leaderboard", label: "leaderboard" },
   { href: "/dashboard", label: "stats" },
   { href: "/badges", label: "badges" },
+  { href: "/friends", label: "friends" },
   { href: "/race/create", label: "race" },
 ];
 

@@ -31,6 +31,12 @@ const PUNCT_MARKS = [",", ".", "!", "?", ";", ":"];
 
 export type Difficulty = "easy" | "medium" | "hard";
 
+// Set by the UI when a non-English language is picked; empty means use WORD_BANK.
+let activeBank: string[] = [];
+export function setActiveBank(words: string[]) {
+  activeBank = words;
+}
+
 // Longer, less common words that only show up on hard.
 const HARD_EXTRA: string[] = [
   "acknowledge", "bureaucracy", "conscientious", "disproportionate", "entrepreneurial",
@@ -45,6 +51,15 @@ const HARD_EXTRA: string[] = [
 // easy = short + common (finger-friendly), medium = the full everyday bank,
 // hard = everything plus the long/awkward words above.
 function bankFor(difficulty: Difficulty): string[] {
+  if (activeBank.length) {
+    // Other languages don't have a hard/easy split of their own, so difficulty
+    // just narrows by word length.
+    if (difficulty === "easy") {
+      const short = activeBank.filter((w) => w.length <= 5);
+      return short.length >= 10 ? short : activeBank;
+    }
+    return activeBank;
+  }
   if (difficulty === "easy") return WORD_BANK.filter((w) => w.length <= 5);
   if (difficulty === "hard") return WORD_BANK.concat(HARD_EXTRA);
   return WORD_BANK;

@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTypingEngine, FinishStats } from "@/lib/useTypingEngine";
-import { generateWords, randomQuoteWords, Difficulty } from "@/lib/wordBank";
+import { generateWords, randomQuoteWords, Difficulty, setActiveBank } from "@/lib/wordBank";
+import { LANGUAGES, LanguageId, getLanguage } from "@/lib/languages";
 import { codeFromKeyboardEvent } from "@/lib/fingerMap";
-import { playKeySound, playErrorSound, playFinishSound, setSoundType, SoundType } from "@/lib/sound";
+import { playKeySound, playErrorSound, playFinishSound, setSoundEnabled } from "@/lib/sound";
 import { WordDisplay } from "./WordDisplay";
+import { MobileInput } from "./MobileInput";
 import { ResultsPanel } from "./ResultsPanel";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
@@ -46,15 +48,19 @@ export function TypingTest() {
   const [blind, setBlind] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const [customText, setCustomText] = useState("");
+  const [language, setLanguage] = useState<LanguageId>("english");
   const [soundOn, setSoundOn] = useState(false);
-  const [soundType, setSoundTypeState] = useState<SoundType>("mechanical");
+
+  // Word source follows the selected language; English falls back to the built-in bank.
+  useEffect(() => {
+    setActiveBank(getLanguage(language).words);
+  }, [language]);
 
   useEffect(() => {
     try {
-      setSoundOn(localStorage.getItem("typeflow_sound") === "1");
-      const savedType = (localStorage.getItem("typeflow_sound_type") as SoundType) ?? "mechanical";
-      setSoundTypeState(savedType);
-      setSoundType(savedType);
+      const on = localStorage.getItem("typeflow_sound") === "1";
+      setSoundOn(on);
+      setSoundEnabled(on);
     } catch {
       /* ignore */
     }
@@ -62,6 +68,7 @@ export function TypingTest() {
   const toggleSound = useCallback(() => {
     setSoundOn((prev) => {
       const next = !prev;
+      setSoundEnabled(next);
       try {
         localStorage.setItem("typeflow_sound", next ? "1" : "0");
       } catch {
@@ -71,27 +78,6 @@ export function TypingTest() {
     });
   }, []);
 
-  const cycleSoundType = useCallback(() => {
-    const types: SoundType[] = ["mechanical", "soft", "off"];
-    setSoundTypeState((prev) => {
-      // When muted, the first click should switch the current type on rather than
-      // skipping past it (otherwise "off" -> click -> "soft" hides mechanical).
-      const next = soundOnRef.current
-        ? types[(types.indexOf(prev) + 1) % types.length]
-        : prev === "off"
-        ? "mechanical"
-        : prev;
-      setSoundType(next);
-      // auto-enable sound when a type is selected
-      if (next !== "off") setSoundOn(true);
-      else setSoundOn(false);
-      try {
-        localStorage.setItem("typeflow_sound_type", next);
-        localStorage.setItem("typeflow_sound", next !== "off" ? "1" : "0");
-      } catch { /* ignore */ }
-      return next;
-    });
-  }, []);
   const soundOnRef = useRef(soundOn);
   useEffect(() => {
     soundOnRef.current = soundOn;
@@ -117,7 +103,7 @@ export function TypingTest() {
   const savedRef = useRef(false);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { reset, appendWords, typeChar, backspace, finish, sampleWpm, computeFinishStats } = engine;
+  const { reset, appendWords, typeChar, backspace, finish, sampleWpm, computeFinishStats, getKeyStats } = engine;
 
   const restart = useCallback(() => {
     const w = buildWords(mode, wordsAmount, numbers, punctuation, difficulty, customText);
@@ -137,7 +123,7 @@ export function TypingTest() {
     restart();
     // restart's own deps already cover mode/timeAmount/wordsAmount/numbers/punctuation/difficulty
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, timeAmount, wordsAmount, numbers, punctuation, difficulty, customText]);
+  }, [mode, timeAmount, wordsAmount, numbers, punctuation, difficulty, customText, language]);
 
   const finishTest = useCallback(() => finish(), [finish]);
 
@@ -198,6 +184,7 @@ export function TypingTest() {
           mode,
           amount: mode === "time" ? timeAmount : wordsAmount,
           ...stats,
+          keyStats: getKeyStats(),
         })
         .then((d) => {
           if (d.earnedBadges?.length) setEarnedBadges(d.earnedBadges);
@@ -207,7 +194,7 @@ export function TypingTest() {
           /* non-fatal: this result just won't sync this time */
         });
     }
-  }, [engine.finished, computeFinishStats, user, mode, timeAmount, wordsAmount]);
+  }, [engine.finished, computeFinishStats, user, mode, timeAmount, wordsAmount, getKeyStats]);
 
   // global keyboard input
   useEffect(() => {
@@ -271,10 +258,10 @@ export function TypingTest() {
             setBlind={setBlind}
             difficulty={difficulty}
             setDifficulty={setDifficulty}
+            language={language}
+            setLanguage={setLanguage}
             soundOn={soundOn}
             toggleSound={toggleSound}
-            soundType={soundType}
-            cycleSoundType={cycleSoundType}
           />
 
           {mode === "custom" && (
@@ -306,6 +293,18 @@ export function TypingTest() {
             currentWordIdx={engine.currentWordIdx}
             currentCharIdx={engine.currentCharIdx}
             blind={blind}
+          />
+
+          <MobileInput
+            onChar={(ch) => {
+              const r = typeChar(ch);
+              if (soundOnRef.current) {
+                if (r === "incorrect") playErrorSound();
+                else if (r === "correct" || r === "space") playKeySound();
+              }
+            }}
+            onBackspace={backspace}
+            disabled={engine.finished}
           />
 
           <div className="mt-6">
@@ -340,19 +339,18 @@ interface ConfigBarProps {
   setBlind: (b: boolean) => void;
   difficulty: Difficulty;
   setDifficulty: (d: Difficulty) => void;
+  language: LanguageId;
+  setLanguage: (l: LanguageId) => void;
   soundOn: boolean;
   toggleSound: () => void;
-  soundType: SoundType;
-  cycleSoundType: () => void;
 }
 
 function ConfigBar(props: ConfigBarProps) {
   const {
     mode, setMode, timeAmount, setTimeAmount, wordsAmount, setWordsAmount,
     numbers, setNumbers, punctuation, setPunctuation, blind, setBlind,
-    difficulty, setDifficulty,
+    difficulty, setDifficulty, language, setLanguage,
     soundOn, toggleSound,
-    soundType, cycleSoundType,
   } = props;
 
   const tab = (active: boolean) =>
@@ -391,6 +389,19 @@ function ConfigBar(props: ConfigBarProps) {
         </div>
       )}
       <div className="w-1 h-1 rounded-full bg-border mx-2" />
+      <select
+        value={language}
+        onChange={(e) => setLanguage(e.target.value as LanguageId)}
+        className="px-2 py-1.5 text-xs font-mono bg-panel2 text-dim border-2 border-border rounded-none focus:outline-none focus:border-accent"
+        title="Language"
+      >
+        {LANGUAGES.map((l) => (
+          <option key={l.id} value={l.id}>
+            {l.label}
+          </option>
+        ))}
+      </select>
+      <div className="w-1 h-1 rounded-full bg-border mx-2" />
       <div className="flex gap-1">
         {DIFFICULTIES.map((d) => (
           <button
@@ -425,15 +436,8 @@ function ConfigBar(props: ConfigBarProps) {
         <button className={tab(blind)} onClick={() => setBlind(!blind)}>
           blind
         </button>
-        <button
-          className={tab(soundOn)}
-          onClick={cycleSoundType}
-          title="Click to cycle: mechanical → soft → off"
-        >
-          {/* Label has to follow soundOn, not just soundType - otherwise it reads
-              "mech" while sound is actually muted. */}
-          {soundOn ? "🔊" : "🔇"}{" "}
-          {!soundOn ? "off" : soundType === "mechanical" ? "mech" : "soft"}
+        <button className={tab(soundOn)} onClick={toggleSound} title="Keystroke sound">
+          {soundOn ? "🔊" : "🔇"} sound
         </button>
       </div>
     </div>

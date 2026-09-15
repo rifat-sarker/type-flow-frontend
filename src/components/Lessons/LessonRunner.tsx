@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useTypingEngine, FinishStats } from "@/lib/useTypingEngine";
 import { Lesson, generateLessonWords, LESSONS } from "@/lib/lessons";
 import { codeFromKeyboardEvent } from "@/lib/fingerMap";
-import { playKeySound, playErrorSound, playFinishSound } from "@/lib/sound";
+import { playKeySound, playErrorSound, playFinishSound, setSoundEnabled } from "@/lib/sound";
 import { WordDisplay } from "@/components/TypingTest/WordDisplay";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
@@ -29,7 +29,9 @@ export function LessonRunner({ lesson }: { lesson: Lesson }) {
 
   useEffect(() => {
     try {
-      soundRef.current = localStorage.getItem("typeflow_sound") === "1";
+      const on = localStorage.getItem("typeflow_sound") === "1";
+      soundRef.current = on;
+      setSoundEnabled(on);
     } catch {
       /* ignore */
     }
