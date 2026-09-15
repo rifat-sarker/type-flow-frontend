@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { SocialButtons } from "@/components/Auth/SocialButtons";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -37,6 +38,7 @@ export default function RegisterPage() {
   return (
     <div className="max-w-sm mx-auto">
       <h1 className="font-mono text-2xl font-bold mb-8">Create account</h1>
+      <SocialButtons />
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <div>
           <label className="block text-xs font-mono uppercase text-dim mb-1.5">Username</label>

@@ -1,19 +1,27 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { SocialButtons } from "@/components/Auth/SocialButtons";
 
-export default function LoginPage() {
+function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [emailOrUsername, setEmailOrUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // OAuth failures come back as ?error= on this page.
+  useEffect(() => {
+    const e = searchParams.get("error");
+    if (e) setError(e);
+  }, [searchParams]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -32,6 +40,7 @@ export default function LoginPage() {
   return (
     <div className="max-w-sm mx-auto">
       <h1 className="font-mono text-2xl font-bold mb-8">Log in</h1>
+      <SocialButtons />
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <div>
           <label className="block text-xs font-mono uppercase text-dim mb-1.5">Email or username</label>
@@ -58,5 +67,13 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

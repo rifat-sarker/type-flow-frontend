@@ -7,6 +7,7 @@ export interface AuthUser {
   bestWpm: number;
   role: "user" | "admin";
   isVerified: boolean;
+  hasPassword: boolean;
 }
 
 export interface TestResultRecord {
