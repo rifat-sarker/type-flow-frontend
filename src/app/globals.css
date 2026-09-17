@@ -138,4 +138,5 @@ body {
 /* ─── Typing text font ───────────────────────── */
 .typing-font {
   font-family: var(--font-lora), Georgia, 'Times New Roman', serif;
+  font-weight: 400;
 }
