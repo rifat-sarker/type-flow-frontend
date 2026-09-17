@@ -72,11 +72,17 @@ export function playKeySound() {
   const audio = getCtx();
   if (!audio) return;
   const t = audio.currentTime;
-  // Slight pitch jitter so a fast run of keys doesn't sound mechanical-repetitive.
+  // Slight pitch jitter so a fast run of keys doesn't sound like a machine gun.
   const p = 0.94 + Math.random() * 0.13;
-  burst(audio, t, { freq: 3200 * p, q: 1.0, decay: 0.011, gain: 0.34 });
-  burst(audio, t, { freq: 1200 * p, q: 1.8, decay: 0.018, gain: 0.2 });
-  burst(audio, t, { freq: 420 * p, q: 1.4, decay: 0.024, gain: 0.1 });
+  // Four layers mimic a clicky mechanical switch (Cherry MX Blue-ish): a sharp
+  // high tick for the actuation click, a mid "body" thock from the stem/housing,
+  // a low thud from the keycap bottoming out, and a second, quieter tick ~25ms
+  // later for the release - that trailing click is what separates "mechanical"
+  // from a flat single-hit tap sound.
+  burst(audio, t, { freq: 4200 * p, q: 1.1, decay: 0.009, gain: 0.42 });
+  burst(audio, t, { freq: 1500 * p, q: 2.0, decay: 0.02, gain: 0.26 });
+  burst(audio, t, { freq: 380 * p, q: 1.5, decay: 0.032, gain: 0.16 });
+  burst(audio, t, { freq: 3400 * p, q: 1.3, decay: 0.007, gain: 0.14, delay: 0.026 });
 }
 
 export function playErrorSound() {

@@ -10,6 +10,7 @@ import { WeakKey, generateWeakKeyWords } from "@/lib/weakKeys";
 import { codeFromKeyboardEvent } from "@/lib/fingerMap";
 import { playKeySound, playErrorSound, playFinishSound, setSoundEnabled } from "@/lib/sound";
 import { WordDisplay } from "@/components/TypingTest/WordDisplay";
+import { TextSize, getStoredTextSize } from "@/lib/textSize";
 import { Button } from "@/components/ui/Button";
 
 function accuracyColor(acc: number): string {
@@ -28,6 +29,7 @@ export default function PracticePage() {
   const { reset, typeChar, backspace, finish, computeFinishStats, getKeyStats } = engine;
 
   const [stats, setStats] = useState<FinishStats | null>(null);
+  const [textSize, setTextSize] = useState<TextSize>("md");
   const savedRef = useRef(false);
   const soundRef = useRef(false);
 
@@ -37,12 +39,14 @@ export default function PracticePage() {
 
   useEffect(() => {
     try {
-      const on = localStorage.getItem("typeflow_sound") === "1";
+      const stored = localStorage.getItem("typeflow_sound");
+      const on = stored === null ? true : stored === "1";
       soundRef.current = on;
       setSoundEnabled(on);
     } catch {
       /* ignore */
     }
+    setTextSize(getStoredTextSize());
   }, []);
 
   useEffect(() => {
@@ -180,6 +184,7 @@ export default function PracticePage() {
             wordStates={engine.wordStates}
             currentWordIdx={engine.currentWordIdx}
             currentCharIdx={engine.currentCharIdx}
+            size={textSize}
           />
           <div className="mt-6">
             <Button variant="secondary" onClick={restart}>

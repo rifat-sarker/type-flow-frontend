@@ -10,6 +10,7 @@ import { getGuestId } from "@/lib/guest";
 import { useTypingEngine } from "@/lib/useTypingEngine";
 import { codeFromKeyboardEvent } from "@/lib/fingerMap";
 import { WordDisplay } from "@/components/TypingTest/WordDisplay";
+import { TextSize, getStoredTextSize } from "@/lib/textSize";
 import { PlayerProgressBar } from "./PlayerProgressBar";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -46,6 +47,7 @@ export function RaceTrack({ code }: RaceTrackProps) {
 
   const [guestName, setGuestName] = useState<string | null>(null);
   const [guestNameDraft, setGuestNameDraft] = useState("");
+  const [textSize, setTextSize] = useState<TextSize>("md");
 
   useEffect(() => {
     try {
@@ -54,6 +56,7 @@ export function RaceTrack({ code }: RaceTrackProps) {
     } catch {
       /* ignore */
     }
+    setTextSize(getStoredTextSize());
   }, []);
 
   const joinAsGuest = useCallback((name: string) => {
@@ -358,6 +361,7 @@ export function RaceTrack({ code }: RaceTrackProps) {
               wordStates={engine.wordStates}
               currentWordIdx={engine.currentWordIdx}
               currentCharIdx={engine.currentCharIdx}
+              size={textSize}
             />
           </div>
         </>

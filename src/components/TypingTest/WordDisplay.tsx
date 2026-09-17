@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { WordState, CharStatus } from "@/lib/useTypingEngine";
+import { TextSize, TEXT_SIZE_CLASS } from "@/lib/textSize";
 
 interface WordDisplayProps {
   wordStates: WordState[];
   currentWordIdx: number;
   currentCharIdx: number;
   blind?: boolean;
+  size?: TextSize;
 }
 
 const STATUS_CLASS: Record<CharStatus, string> = {
@@ -22,7 +24,9 @@ export function WordDisplay({
   currentWordIdx,
   currentCharIdx,
   blind = false,
+  size = "md",
 }: WordDisplayProps) {
+  const sizeClass = TEXT_SIZE_CLASS[size];
   const containerRef = useRef<HTMLDivElement>(null);
   const wordsRef = useRef<HTMLDivElement>(null);
   const caretRef = useRef<HTMLDivElement>(null);
@@ -112,7 +116,7 @@ export function WordDisplay({
   return (
     <div
       ref={containerRef}
-      className="relative w-full max-w-3xl mx-auto typing-font text-2xl leading-[1.75] tracking-wide overflow-hidden h-[132px] select-none"
+      className={`relative w-full max-w-5xl mx-auto typing-font leading-[1.75] tracking-wide overflow-hidden select-none ${sizeClass.text} ${sizeClass.height}`}
     >
       {/* Smooth caret — no blink while typing, blinks at rest */}
       <div

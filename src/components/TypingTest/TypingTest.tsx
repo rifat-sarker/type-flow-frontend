@@ -6,6 +6,7 @@ import { generateWords, randomQuoteWords, Difficulty, setActiveBank } from "@/li
 import { LANGUAGES, LanguageId, getLanguage } from "@/lib/languages";
 import { codeFromKeyboardEvent } from "@/lib/fingerMap";
 import { playKeySound, playErrorSound, playFinishSound, setSoundEnabled } from "@/lib/sound";
+import { TextSize, TEXT_SIZES, TEXT_SIZE_LABEL, TEXT_SIZE_FULL_NAME, getStoredTextSize, setStoredTextSize } from "@/lib/textSize";
 import { WordDisplay } from "./WordDisplay";
 import { MobileInput } from "./MobileInput";
 import { ResultsPanel } from "./ResultsPanel";
@@ -49,7 +50,10 @@ export function TypingTest() {
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const [customText, setCustomText] = useState("");
   const [language, setLanguage] = useState<LanguageId>("english");
-  const [soundOn, setSoundOn] = useState(false);
+  // Sound defaults on: absent from localStorage means "never chosen" (not "chose
+  // off"), so only an explicit "0" should turn it off on first load.
+  const [soundOn, setSoundOn] = useState(true);
+  const [textSize, setTextSize] = useState<TextSize>("md");
 
   // Word source follows the selected language; English falls back to the built-in bank.
   useEffect(() => {
@@ -58,12 +62,14 @@ export function TypingTest() {
 
   useEffect(() => {
     try {
-      const on = localStorage.getItem("typeflow_sound") === "1";
+      const stored = localStorage.getItem("typeflow_sound");
+      const on = stored === null ? true : stored === "1";
       setSoundOn(on);
       setSoundEnabled(on);
     } catch {
       /* ignore */
     }
+    setTextSize(getStoredTextSize());
   }, []);
   const toggleSound = useCallback(() => {
     setSoundOn((prev) => {
@@ -82,6 +88,11 @@ export function TypingTest() {
   useEffect(() => {
     soundOnRef.current = soundOn;
   }, [soundOn]);
+
+  const changeTextSize = useCallback((size: TextSize) => {
+    setTextSize(size);
+    setStoredTextSize(size);
+  }, []);
 
   // Empty on first render (server and client match) - the mount effect below fills
   // this in with randomly generated words client-side only, avoiding a hydration
@@ -262,10 +273,12 @@ export function TypingTest() {
             setLanguage={setLanguage}
             soundOn={soundOn}
             toggleSound={toggleSound}
+            textSize={textSize}
+            changeTextSize={changeTextSize}
           />
 
           {mode === "custom" && (
-            <div className="w-full max-w-3xl mb-4">
+            <div className="w-full max-w-5xl mb-4">
               <label className="block text-xs font-mono uppercase text-dim mb-1.5">
                 Your own text
               </label>
@@ -293,6 +306,7 @@ export function TypingTest() {
             currentWordIdx={engine.currentWordIdx}
             currentCharIdx={engine.currentCharIdx}
             blind={blind}
+            size={textSize}
           />
 
           <MobileInput
@@ -343,6 +357,8 @@ interface ConfigBarProps {
   setLanguage: (l: LanguageId) => void;
   soundOn: boolean;
   toggleSound: () => void;
+  textSize: TextSize;
+  changeTextSize: (s: TextSize) => void;
 }
 
 function ConfigBar(props: ConfigBarProps) {
@@ -350,7 +366,7 @@ function ConfigBar(props: ConfigBarProps) {
     mode, setMode, timeAmount, setTimeAmount, wordsAmount, setWordsAmount,
     numbers, setNumbers, punctuation, setPunctuation, blind, setBlind,
     difficulty, setDifficulty, language, setLanguage,
-    soundOn, toggleSound,
+    soundOn, toggleSound, textSize, changeTextSize,
   } = props;
 
   const tab = (active: boolean) =>
@@ -361,84 +377,107 @@ function ConfigBar(props: ConfigBarProps) {
     }`;
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2 mb-8 bg-transparent p-2">
-      <div className="flex gap-1">
-        {(["time", "words", "quote", "zen", "custom"] as Mode[]).map((m) => (
-          <button key={m} className={tab(mode === m)} onClick={() => setMode(m)}>
-            {m}
-          </button>
-        ))}
-      </div>
-      <div className="w-1 h-1 rounded-full bg-border mx-2" />
-      {mode === "time" && (
-        <div className="flex gap-1">
-          {TIME_OPTIONS.map((v) => (
-            <button key={v} className={tab(timeAmount === v)} onClick={() => setTimeAmount(v)}>
-              {v}
+    <div className="flex flex-col items-center gap-2.5 mb-8">
+      {/* Row 1 — what to type: mode, amount, language. These three always change
+          together (amount only makes sense for the active mode), so they read as
+          one continuous decision rather than needing their own row each. */}
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <div className="flex gap-1 bg-panel/60 rounded-lg p-1">
+          {(["time", "words", "quote", "zen", "custom"] as Mode[]).map((m) => (
+            <button key={m} className={tab(mode === m)} onClick={() => setMode(m)}>
+              {m}
             </button>
           ))}
         </div>
-      )}
-      {mode === "words" && (
-        <div className="flex gap-1">
-          {WORD_OPTIONS.map((v) => (
-            <button key={v} className={tab(wordsAmount === v)} onClick={() => setWordsAmount(v)}>
-              {v}
+
+        {mode === "time" && (
+          <div className="flex gap-1 bg-panel/60 rounded-lg p-1">
+            {TIME_OPTIONS.map((v) => (
+              <button key={v} className={tab(timeAmount === v)} onClick={() => setTimeAmount(v)}>
+                {v}
+              </button>
+            ))}
+          </div>
+        )}
+        {mode === "words" && (
+          <div className="flex gap-1 bg-panel/60 rounded-lg p-1">
+            {WORD_OPTIONS.map((v) => (
+              <button key={v} className={tab(wordsAmount === v)} onClick={() => setWordsAmount(v)}>
+                {v}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <select
+          value={language}
+          onChange={(e) => setLanguage(e.target.value as LanguageId)}
+          className="px-2.5 py-1.5 text-xs font-mono bg-panel/60 text-dim border-2 border-transparent rounded-lg focus:outline-none focus:border-accent"
+          title="Language"
+        >
+          {LANGUAGES.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Row 2 — how to practice: difficulty, content modifiers, display prefs.
+          Grouped into separate pill containers with real gaps between them
+          instead of one dense strip, so each cluster reads as its own choice. */}
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <div className="flex gap-1 bg-panel/60 rounded-lg p-1">
+          {DIFFICULTIES.map((d) => (
+            <button
+              key={d}
+              // normal-case overrides the shared tab styling's uppercase, so these
+              // read "Easy / Medium / Hard" rather than shouting.
+              className={`${tab(difficulty === d)} normal-case`}
+              onClick={() => setDifficulty(d)}
+              title={
+                d === "easy"
+                  ? "Short, common words"
+                  : d === "medium"
+                  ? "Everyday vocabulary"
+                  : "Long words + capitals & punctuation"
+              }
+            >
+              {d.charAt(0).toUpperCase() + d.slice(1)}
             </button>
           ))}
         </div>
-      )}
-      <div className="w-1 h-1 rounded-full bg-border mx-2" />
-      <select
-        value={language}
-        onChange={(e) => setLanguage(e.target.value as LanguageId)}
-        className="px-2 py-1.5 text-xs font-mono bg-panel2 text-dim border-2 border-border rounded-none focus:outline-none focus:border-accent"
-        title="Language"
-      >
-        {LANGUAGES.map((l) => (
-          <option key={l.id} value={l.id}>
-            {l.label}
-          </option>
-        ))}
-      </select>
-      <div className="w-1 h-1 rounded-full bg-border mx-2" />
-      <div className="flex gap-1">
-        {DIFFICULTIES.map((d) => (
-          <button
-            key={d}
-            // normal-case overrides the shared tab styling's uppercase, so these
-            // read "Easy / Medium / Hard" rather than shouting.
-            className={`${tab(difficulty === d)} normal-case`}
-            onClick={() => setDifficulty(d)}
-            title={
-              d === "easy"
-                ? "Short, common words"
-                : d === "medium"
-                ? "Everyday vocabulary"
-                : "Long words + capitals & punctuation"
-            }
-          >
-            {d.charAt(0).toUpperCase() + d.slice(1)}
+
+        <div className="flex gap-1 bg-panel/60 rounded-lg p-1">
+          <button className={tab(punctuation)} onClick={() => setPunctuation(!punctuation)}>
+            @ punctuation
           </button>
-        ))}
-      </div>
-      <div className="w-1 h-1 rounded-full bg-border mx-2" />
-      <div className="flex gap-1">
-        <button className={tab(punctuation)} onClick={() => setPunctuation(!punctuation)}>
-          @ punctuation
-        </button>
-        <button className={tab(numbers)} onClick={() => setNumbers(!numbers)}>
-          # numbers
-        </button>
-      </div>
-      <div className="w-px h-5 bg-border" />
-      <div className="flex gap-1">
-        <button className={tab(blind)} onClick={() => setBlind(!blind)}>
-          blind
-        </button>
-        <button className={tab(soundOn)} onClick={toggleSound} title="Keystroke sound">
-          {soundOn ? "🔊" : "🔇"} sound
-        </button>
+          <button className={tab(numbers)} onClick={() => setNumbers(!numbers)}>
+            # numbers
+          </button>
+        </div>
+
+        <div className="flex gap-1 bg-panel/60 rounded-lg p-1">
+          <button className={tab(blind)} onClick={() => setBlind(!blind)}>
+            blind
+          </button>
+          <button className={tab(soundOn)} onClick={toggleSound} title="Keystroke sound">
+            {soundOn ? "🔊" : "🔇"} sound
+          </button>
+        </div>
+
+        <div className="flex gap-1 bg-panel/60 rounded-lg p-1">
+          {TEXT_SIZES.map((s) => (
+            <button
+              key={s}
+              className={tab(textSize === s)}
+              onClick={() => changeTextSize(s)}
+              title={`Text size: ${TEXT_SIZE_FULL_NAME[s]}`}
+            >
+              {TEXT_SIZE_LABEL[s]}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

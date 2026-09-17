@@ -7,6 +7,7 @@ import { Lesson, generateLessonWords, LESSONS } from "@/lib/lessons";
 import { codeFromKeyboardEvent } from "@/lib/fingerMap";
 import { playKeySound, playErrorSound, playFinishSound, setSoundEnabled } from "@/lib/sound";
 import { WordDisplay } from "@/components/TypingTest/WordDisplay";
+import { TextSize, getStoredTextSize } from "@/lib/textSize";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
@@ -22,6 +23,7 @@ export function LessonRunner({ lesson }: { lesson: Lesson }) {
   const { reset, typeChar, backspace, finish, computeFinishStats } = engine;
 
   const [stats, setStats] = useState<FinishStats | null>(null);
+  const [textSize, setTextSize] = useState<TextSize>("md");
   const [pressedCode, setPressedCode] = useState<string | null>(null);
   const [pressId, setPressId] = useState(0);
   const savedRef = useRef(false);
@@ -29,12 +31,14 @@ export function LessonRunner({ lesson }: { lesson: Lesson }) {
 
   useEffect(() => {
     try {
-      const on = localStorage.getItem("typeflow_sound") === "1";
+      const stored = localStorage.getItem("typeflow_sound");
+      const on = stored === null ? true : stored === "1";
       soundRef.current = on;
       setSoundEnabled(on);
     } catch {
       /* ignore */
     }
+    setTextSize(getStoredTextSize());
   }, []);
 
   const restart = useCallback(() => {
@@ -183,6 +187,7 @@ export function LessonRunner({ lesson }: { lesson: Lesson }) {
         wordStates={engine.wordStates}
         currentWordIdx={engine.currentWordIdx}
         currentCharIdx={engine.currentCharIdx}
+        size={textSize}
       />
 
       <div className="mt-6">

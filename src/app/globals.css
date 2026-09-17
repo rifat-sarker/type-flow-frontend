@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
-
 /* Each theme is a set of "R G B" triplets (no commas - Tailwind's rgb(var(--x) / <alpha>)
    pattern needs space-separated channels) so any utility can still use /NN opacity. */
 :root,
@@ -66,7 +64,7 @@ body {
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 ::selection {
@@ -135,5 +133,5 @@ body {
 
 /* ─── Typing text font ───────────────────────── */
 .typing-font {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: var(--font-jetbrains-mono), 'Fira Code', monospace;
 }

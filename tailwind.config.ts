@@ -20,8 +20,10 @@ const config: Config = {
         danger: themeColor("danger"),
       },
       fontFamily: {
-        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
-        sans: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        // CSS vars come from next/font in layout.tsx (self-hosted, no network
+        // request at runtime) - the rest of each stack is just the fallback.
+        mono: ["var(--font-jetbrains-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
+        sans: ["var(--font-inter)", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
       },
       borderRadius: {
         none: "0px",

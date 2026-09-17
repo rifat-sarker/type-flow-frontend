@@ -24,7 +24,7 @@ const FEATURES: Feature[] = [
   },
   {
     title: "Keystroke sounds",
-    body: "Mechanical (Cherry MX style) or soft laptop-style click, fully synthesized. Cycle it from the sound button.",
+    body: "A synthesized mechanical-switch click on every keypress, with a distinct thud on mistakes. One tap to toggle it on or off.",
   },
   {
     title: "Practice modifiers",
