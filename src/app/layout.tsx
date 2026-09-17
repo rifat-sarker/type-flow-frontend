@@ -32,7 +32,7 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "TypeFlow",
+  title: "Typist",
   description: "A fast, feature-complete typing test with accounts, leaderboards, and live multiplayer races.",
 };
 

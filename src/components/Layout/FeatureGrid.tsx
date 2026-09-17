@@ -84,7 +84,7 @@ export function FeatureGrid() {
       <div className="border-t-2 border-border pt-10">
         <h2 className="font-mono text-lg font-bold mb-1">Everything in one place</h2>
         <p className="text-dim text-sm mb-8">
-          Most typing sites give you one piece of this. TypeFlow puts the whole practice
+          Most typing sites give you one piece of this. Typist puts the whole practice
           loop — drills, feedback, competition and progress — in a single place.
         </p>
 

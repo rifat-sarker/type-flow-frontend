@@ -75,7 +75,7 @@ export default function CertificatePage() {
         className="certificate bg-panel border-2 border-accent p-8 sm:p-12 text-center"
       >
         <div className="font-mono text-xs uppercase tracking-[0.3em] text-dim mb-6">
-          TypeFlow — Certificate of Typing Proficiency
+          Typist — Certificate of Typing Proficiency
         </div>
 
         <div className="text-dim text-sm mb-2">This certifies that</div>

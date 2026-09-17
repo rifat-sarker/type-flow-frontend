@@ -9,6 +9,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { ThemePicker } from "./ThemePicker";
 import { ModeToggle } from "./ModeToggle";
 import { OnlineCount } from "./OnlineCount";
+import { Logo } from "./Logo";
 
 const NAV = [
   { href: "/", label: "type" },
@@ -95,8 +96,17 @@ export function Header() {
   return (
     <>
       <header className="relative flex items-center justify-between gap-4 px-4 sm:px-6 py-4 border-b-2 border-border">
-        <Link href="/" className="font-mono font-bold text-lg tracking-tight text-text shrink-0">
-          type<span className="text-accent">flow</span>
+        <Link href="/" className="flex items-center gap-2.5 shrink-0">
+          <Logo size={30} />
+          <span className="font-sans font-extrabold text-2xl tracking-[-0.03em] text-text">
+            Typ
+            <span
+              className="bg-clip-text text-transparent"
+              style={{ backgroundImage: "linear-gradient(135deg, #eb9e6f, #bd6151)" }}
+            >
+              ist
+            </span>
+          </span>
         </Link>
 
         {/* Desktop: full nav + right cluster inline. Hidden below lg, where it
