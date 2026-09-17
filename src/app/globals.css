@@ -11,7 +11,7 @@
   --c-panel2: 29 30 34;
   --c-border: 42 43 48;
   --c-text: 255 255 255;
-  --c-dim: 117 118 124;
+  --c-dim: 128 128 128;
   --c-accent: 235 158 111; /* Soft Peach Orange */
   --c-success: 153 204 163;
   --c-danger: 226 109 116; /* Soft Rose Red */
@@ -23,7 +23,7 @@
   --c-panel2: 24 31 27;
   --c-border: 36 46 40;
   --c-text: 255 255 255;
-  --c-dim: 113 130 118;
+  --c-dim: 128 128 128;
   --c-accent: 148 204 163; /* Soft Sage Green */
   --c-success: 138 214 90;
   --c-danger: 226 109 116;
@@ -35,7 +35,7 @@
   --c-panel2: 20 28 38;
   --c-border: 32 42 54;
   --c-text: 255 255 255;
-  --c-dim: 116 130 146;
+  --c-dim: 128 128 128;
   --c-accent: 122 186 226; /* Soft Sky Blue */
   --c-success: 135 200 170;
   --c-danger: 226 109 116;
@@ -47,7 +47,7 @@
   --c-panel2: 242 242 239;
   --c-border: 220 220 216;
   --c-text: 0 0 0;
-  --c-dim: 85 85 80;
+  --c-dim: 90 90 90;
   --c-accent: 189 97 81; /* Soft Terracotta / Muted Coral */
   --c-success: 60 145 100;
   --c-danger: 190 75 90;
