@@ -12,11 +12,14 @@ interface WordDisplayProps {
   size?: TextSize;
 }
 
+// Always the theme-independent pure black/white --c-text, only ever varied
+// by opacity - never by hue (--c-dim used to shift per theme, which read as
+// tinted gray instead of true black/white).
 const STATUS_CLASS: Record<CharStatus, string> = {
-  pending: "text-dim",
+  pending: "text-text/45",
   correct: "text-text",
   incorrect: "text-danger underline decoration-2 underline-offset-2",
-  missed: "text-dim/60 underline decoration-dotted",
+  missed: "text-text/30 underline decoration-dotted",
 };
 
 export function WordDisplay({
