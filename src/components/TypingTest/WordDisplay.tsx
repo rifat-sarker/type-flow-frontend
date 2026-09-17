@@ -12,14 +12,15 @@ interface WordDisplayProps {
   size?: TextSize;
 }
 
-// Always the theme-independent pure black/white --c-text, only ever varied
-// by opacity - never by hue (--c-dim used to shift per theme, which read as
-// tinted gray instead of true black/white).
+// Full-solid --c-text always - #000000 on the light theme, #ffffff on every
+// dark theme. No opacity, no per-theme dim color: nothing blends it toward
+// gray. Pending vs typed is told apart by the caret and the underline below,
+// not by a lighter shade.
 const STATUS_CLASS: Record<CharStatus, string> = {
-  pending: "text-text/45",
+  pending: "text-text",
   correct: "text-text",
   incorrect: "text-danger underline decoration-2 underline-offset-2",
-  missed: "text-text/30 underline decoration-dotted",
+  missed: "text-text underline decoration-dotted",
 };
 
 export function WordDisplay({
