@@ -79,10 +79,10 @@ export function playKeySound() {
   // a low thud from the keycap bottoming out, and a second, quieter tick ~25ms
   // later for the release - that trailing click is what separates "mechanical"
   // from a flat single-hit tap sound.
-  burst(audio, t, { freq: 4200 * p, q: 1.1, decay: 0.009, gain: 0.42 });
-  burst(audio, t, { freq: 1500 * p, q: 2.0, decay: 0.02, gain: 0.26 });
-  burst(audio, t, { freq: 380 * p, q: 1.5, decay: 0.032, gain: 0.16 });
-  burst(audio, t, { freq: 3400 * p, q: 1.3, decay: 0.007, gain: 0.14, delay: 0.026 });
+  burst(audio, t, { freq: 4200 * p, q: 1.1, decay: 0.009, gain: 0.6 });
+  burst(audio, t, { freq: 1500 * p, q: 2.0, decay: 0.02, gain: 0.37 });
+  burst(audio, t, { freq: 380 * p, q: 1.5, decay: 0.032, gain: 0.23 });
+  burst(audio, t, { freq: 3400 * p, q: 1.3, decay: 0.007, gain: 0.2, delay: 0.026 });
 }
 
 export function playErrorSound() {
@@ -90,8 +90,8 @@ export function playErrorSound() {
   const audio = getCtx();
   if (!audio) return;
   const t = audio.currentTime;
-  burst(audio, t, { freq: 190, q: 1.1, decay: 0.045, gain: 0.3, type: "lowpass" });
-  burst(audio, t, { freq: 330, q: 2.0, decay: 0.03, gain: 0.14 });
+  burst(audio, t, { freq: 190, q: 1.1, decay: 0.045, gain: 0.44, type: "lowpass" });
+  burst(audio, t, { freq: 330, q: 2.0, decay: 0.03, gain: 0.2 });
 }
 
 export function playFinishSound() {
@@ -100,6 +100,6 @@ export function playFinishSound() {
   if (!audio) return;
   const t = audio.currentTime;
   [900, 1350, 1800].forEach((f, i) => {
-    burst(audio, t, { freq: f, q: 7, decay: 0.15, gain: 0.15, delay: i * 0.07 });
+    burst(audio, t, { freq: f, q: 7, decay: 0.15, gain: 0.22, delay: i * 0.07 });
   });
 }
