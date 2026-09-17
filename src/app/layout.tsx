@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Lora } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider, THEME_INIT_SCRIPT } from "@/lib/theme-context";
@@ -22,6 +22,15 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+// The words-to-type text itself - a warm, proportional reading serif instead of
+// the old monospace, since that's what was actually asked for by example.
+const lora = Lora({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-lora",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "TypeFlow",
   description: "A fast, feature-complete typing test with accounts, leaderboards, and live multiplayer races.",
@@ -35,7 +44,11 @@ export const viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${inter.variable} ${jetbrainsMono.variable} ${lora.variable}`}
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

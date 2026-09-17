@@ -23,10 +23,10 @@ export const TEXT_SIZE_FULL_NAME: Record<TextSize, string> = {
 // lines, rounded up a little) so the 3-line viewport in WordDisplay stays exactly
 // 3 lines regardless of which size is picked, instead of clipping a 4th partial line.
 export const TEXT_SIZE_CLASS: Record<TextSize, { text: string; height: string }> = {
-  sm: { text: "text-lg", height: "h-[100px]" },
-  md: { text: "text-2xl", height: "h-[132px]" },
-  lg: { text: "text-3xl", height: "h-[162px]" },
-  xl: { text: "text-4xl", height: "h-[194px]" },
+  sm: { text: "text-xl", height: "h-[116px]" },
+  md: { text: "text-3xl", height: "h-[162px]" },
+  lg: { text: "text-4xl", height: "h-[194px]" },
+  xl: { text: "text-5xl", height: "h-[240px]" },
 };
 
 const STORAGE_KEY = "typeflow_textsize";

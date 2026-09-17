@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { ThemePicker } from "./ThemePicker";
+import { ModeToggle } from "./ModeToggle";
 import { OnlineCount } from "./OnlineCount";
 
 const NAV = [
@@ -108,6 +109,7 @@ export function Header() {
 
         <div className="hidden lg:flex items-center gap-2">
           <OnlineCount />
+          <ModeToggle />
           <ThemePicker />
           <AuthActions />
         </div>
@@ -151,8 +153,11 @@ export function Header() {
               ))}
             </nav>
             <div className="flex items-center justify-between px-4 pb-3">
-              <span className="text-dim text-xs font-mono uppercase">Theme</span>
-              <ThemePicker />
+              <span className="text-dim text-xs font-mono uppercase">Appearance</span>
+              <div className="flex items-center gap-2">
+                <ModeToggle />
+                <ThemePicker />
+              </div>
             </div>
             <div className="px-4 pb-4">
               <AuthActions stacked />

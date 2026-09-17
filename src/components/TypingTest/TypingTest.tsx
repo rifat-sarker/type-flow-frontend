@@ -6,6 +6,7 @@ import { generateWords, randomQuoteWords, Difficulty, setActiveBank } from "@/li
 import { LANGUAGES, LanguageId, getLanguage } from "@/lib/languages";
 import { codeFromKeyboardEvent } from "@/lib/fingerMap";
 import { playKeySound, playErrorSound, playFinishSound, setSoundEnabled } from "@/lib/sound";
+import { vibrateError } from "@/lib/haptics";
 import { TextSize, TEXT_SIZES, TEXT_SIZE_LABEL, TEXT_SIZE_FULL_NAME, getStoredTextSize, setStoredTextSize } from "@/lib/textSize";
 import { WordDisplay } from "./WordDisplay";
 import { MobileInput } from "./MobileInput";
@@ -237,6 +238,7 @@ export function TypingTest() {
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         const result = typeChar(e.key);
+        if (result === "incorrect") vibrateError(); // independent of the sound toggle
         if (soundOnRef.current) {
           if (result === "incorrect") playErrorSound();
           else if (result === "correct" || result === "space") playKeySound();
@@ -312,6 +314,7 @@ export function TypingTest() {
           <MobileInput
             onChar={(ch) => {
               const r = typeChar(ch);
+              if (r === "incorrect") vibrateError(); // independent of the sound toggle
               if (soundOnRef.current) {
                 if (r === "incorrect") playErrorSound();
                 else if (r === "correct" || r === "space") playKeySound();

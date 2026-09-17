@@ -104,7 +104,7 @@ export function WordDisplay({
             // Trigger error shake
             void el.offsetWidth;
             el.classList.add("char-error-anim");
-            setTimeout(() => el.classList.remove("char-error-anim"), 130);
+            setTimeout(() => el.classList.remove("char-error-anim"), 230);
           }
 
           prevStatusRef.current.set(key, c.status);
@@ -116,7 +116,7 @@ export function WordDisplay({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full max-w-5xl mx-auto typing-font leading-[1.75] tracking-wide overflow-hidden select-none ${sizeClass.text} ${sizeClass.height}`}
+      className={`relative w-full max-w-5xl mx-auto typing-font leading-[1.75] overflow-hidden select-none ${sizeClass.text} ${sizeClass.height}`}
     >
       {/* Smooth caret — no blink while typing, blinks at rest */}
       <div
@@ -146,7 +146,7 @@ export function WordDisplay({
           <span
             key={wi}
             data-word
-            className={`inline-block mr-[0.6em] ${wi < currentWordIdx && word.chars.some((c) => c.status === "incorrect") ? "underline decoration-danger/40 underline-offset-2 decoration-dotted" : ""}`}
+            className={`inline-block mr-[0.3em] ${wi < currentWordIdx && word.chars.some((c) => c.status === "incorrect") ? "underline decoration-danger/40 underline-offset-2 decoration-dotted" : ""}`}
           >
             {word.chars.map((c, ci) => {
               const effective: CharStatus =

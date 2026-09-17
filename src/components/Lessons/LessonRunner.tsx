@@ -6,6 +6,7 @@ import { useTypingEngine, FinishStats } from "@/lib/useTypingEngine";
 import { Lesson, generateLessonWords, LESSONS } from "@/lib/lessons";
 import { codeFromKeyboardEvent } from "@/lib/fingerMap";
 import { playKeySound, playErrorSound, playFinishSound, setSoundEnabled } from "@/lib/sound";
+import { vibrateError } from "@/lib/haptics";
 import { WordDisplay } from "@/components/TypingTest/WordDisplay";
 import { TextSize, getStoredTextSize } from "@/lib/textSize";
 import { Button } from "@/components/ui/Button";
@@ -99,6 +100,7 @@ export function LessonRunner({ lesson }: { lesson: Lesson }) {
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         const r = typeChar(e.key);
+        if (r === "incorrect") vibrateError(); // independent of the sound toggle
         if (soundRef.current) {
           if (r === "incorrect") playErrorSound();
           else if (r === "correct" || r === "space") playKeySound();
