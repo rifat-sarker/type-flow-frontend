@@ -139,4 +139,9 @@ body {
 .typing-font {
   font-family: var(--font-lora), Georgia, 'Times New Roman', serif;
   font-weight: 400;
+  /* Pure white on a near-black bg optically reads bolder than the same weight
+     does on light backgrounds ("irradiation") - this keeps the strokes crisp
+     instead of looking artificially thick. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
