@@ -36,19 +36,19 @@ const CAR_PAINTS = [
 
 const BOTS_BY_DIFFICULTY: Record<"easy" | "medium" | "hard", BotRacer[]> = {
   easy: [
-    { id: "bot1", name: "Silver GT", targetWpm: 72, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
-    { id: "bot2", name: "Thunder V8", targetWpm: 82, color: "#f59e0b", trim: "#fde68a", lane: 2 },
-    { id: "bot3", name: "Shadow Viper", targetWpm: 94, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
+    { id: "bot1", name: "Silver GT", targetWpm: 76, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
+    { id: "bot2", name: "Thunder V8", targetWpm: 86, color: "#f59e0b", trim: "#fde68a", lane: 2 },
+    { id: "bot3", name: "Shadow Viper", targetWpm: 98, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
   ],
   medium: [
-    { id: "bot1", name: "Apex Phantom", targetWpm: 78, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
-    { id: "bot2", name: "Turbo Cyclone", targetWpm: 88, color: "#f59e0b", trim: "#fde68a", lane: 2 },
-    { id: "bot3", name: "Dark Nebula", targetWpm: 102, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
+    { id: "bot1", name: "Apex Phantom", targetWpm: 84, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
+    { id: "bot2", name: "Turbo Cyclone", targetWpm: 95, color: "#f59e0b", trim: "#fde68a", lane: 2 },
+    { id: "bot3", name: "Dark Nebula", targetWpm: 110, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
   ],
   hard: [
-    { id: "bot1", name: "Hyper Mach 1", targetWpm: 86, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
-    { id: "bot2", name: "Velocity X", targetWpm: 98, color: "#f59e0b", trim: "#fde68a", lane: 2 },
-    { id: "bot3", name: "Ghost Demon", targetWpm: 116, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
+    { id: "bot1", name: "Hyper Mach 1", targetWpm: 92, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
+    { id: "bot2", name: "Velocity X", targetWpm: 106, color: "#f59e0b", trim: "#fde68a", lane: 2 },
+    { id: "bot3", name: "Ghost Demon", targetWpm: 124, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
   ],
 };
 
@@ -120,16 +120,14 @@ export function NitroRacerTrack({
       return;
     }
 
-    // Expected duration of the test based on mode
-    let benchmarkTime = 30; // default 30s
-    if (mode === "time" && totalTime) benchmarkTime = totalTime;
-    else if (totalWords) benchmarkTime = Math.max(15, (totalWords / 60) * 60);
+    // Target distance: in time mode (e.g. 30s), target is 30 words (matches user's target)
+    // in words mode, target is exact words count
+    const targetWords = mode === "time" && totalTime ? totalTime : (totalWords || 30);
 
     const newPositions = bots.map((bot) => {
       // Calculate bot progress: Bot moves steadily at its target WPM
       // A 60 WPM bot types 1 word/sec
       const wordsTyped = (bot.targetWpm / 60) * elapsedSeconds;
-      const targetWords = totalWords || (benchmarkTime * 60) / 60;
       const baseProgress = (wordsTyped / targetWords) * 100;
       // Cap at 98% until race finish
       return Math.min(isFinished ? 100 : 96, Math.max(0, baseProgress));
@@ -173,21 +171,24 @@ export function NitroRacerTrack({
       const dt = Math.min(0.1, (now - lastTime) / 1000);
       lastTime = now;
 
-      if (isStarted && wpmRef.current > 0) {
-        // Continuous pixel movement per second proportional to WPM
-        const pxPerSec = Math.max(15, (wpmRef.current / 60) * 140);
-        offsetRef.current = (offsetRef.current + pxPerSec * dt) % 40;
+      // Road lines keep running continuously so the highway feels alive all the time
+      // Base cruising speed: 45 px/sec when racing (20 px/sec when waiting)
+      // When typing, speed surges dynamically on top of cruising speed!
+      const baseSpeed = isStarted ? 45 : 20;
+      const boostSpeed = (wpmRef.current / 60) * 130;
+      const pxPerSec = baseSpeed + boostSpeed;
 
-        const dividers = document.querySelectorAll<HTMLElement>(".road-lane-divider");
-        dividers.forEach((el) => {
-          el.style.backgroundPosition = `-${offsetRef.current}px 0`;
-        });
+      offsetRef.current = (offsetRef.current + pxPerSec * dt) % 40;
 
-        const rumbles = document.querySelectorAll<HTMLElement>(".road-rumble-strip");
-        rumbles.forEach((el) => {
-          el.style.backgroundPosition = `-${offsetRef.current % 24}px 0`;
-        });
-      }
+      const dividers = document.querySelectorAll<HTMLElement>(".road-lane-divider");
+      dividers.forEach((el) => {
+        el.style.backgroundPosition = `-${offsetRef.current}px 0`;
+      });
+
+      const rumbles = document.querySelectorAll<HTMLElement>(".road-rumble-strip");
+      rumbles.forEach((el) => {
+        el.style.backgroundPosition = `-${offsetRef.current % 24}px 0`;
+      });
 
       animId = requestAnimationFrame(loop);
     };
