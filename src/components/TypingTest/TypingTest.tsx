@@ -592,6 +592,19 @@ function ConfigBar(props: ConfigBarProps) {
             </button>
           ))}
         </div>
+
+        {onToggleHide && (
+          <div className="flex gap-1 bg-panel/60 rounded-lg p-1">
+            <button
+              onClick={onToggleHide}
+              className="px-2.5 py-1.5 text-xs font-mono text-dim hover:text-text hover:bg-panel2 rounded-md transition-colors flex items-center gap-1.5"
+              title="Hide filter options for more vertical space"
+            >
+              <span>▲</span>
+              <span>Hide</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
