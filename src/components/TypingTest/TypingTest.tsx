@@ -56,6 +56,7 @@ export function TypingTest() {
   // off"), so only an explicit "0" should turn it off on first load.
   const [soundOn, setSoundOn] = useState(true);
   const [textSize, setTextSize] = useState<TextSize>("md");
+  const [showConfig, setShowConfig] = useState(true);
 
   // Word source follows the selected language; English falls back to the built-in bank.
   useEffect(() => {
@@ -68,10 +69,27 @@ export function TypingTest() {
       const on = stored === null ? true : stored === "1";
       setSoundOn(on);
       setSoundEnabled(on);
+
+      const savedConfig = localStorage.getItem("typeflow_show_config");
+      if (savedConfig !== null) {
+        setShowConfig(savedConfig === "1");
+      }
     } catch {
       /* ignore */
     }
     setTextSize(getStoredTextSize());
+  }, []);
+
+  const toggleConfig = useCallback(() => {
+    setShowConfig((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("typeflow_show_config", next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
   }, []);
   const toggleSound = useCallback(() => {
     setSoundOn((prev) => {
@@ -306,28 +324,52 @@ export function TypingTest() {
     <div className="flex flex-col items-center">
       {!finishStats ? (
         <>
-          <ConfigBar
-            mode={mode}
-            setMode={setMode}
-            timeAmount={timeAmount}
-            setTimeAmount={setTimeAmount}
-            wordsAmount={wordsAmount}
-            setWordsAmount={setWordsAmount}
-            numbers={numbers}
-            setNumbers={setNumbers}
-            punctuation={punctuation}
-            setPunctuation={setPunctuation}
-            blind={blind}
-            setBlind={setBlind}
-            difficulty={difficulty}
-            setDifficulty={setDifficulty}
-            language={language}
-            setLanguage={setLanguage}
-            soundOn={soundOn}
-            toggleSound={toggleSound}
-            textSize={textSize}
-            changeTextSize={changeTextSize}
-          />
+          {showConfig ? (
+            <ConfigBar
+              mode={mode}
+              setMode={setMode}
+              timeAmount={timeAmount}
+              setTimeAmount={setTimeAmount}
+              wordsAmount={wordsAmount}
+              setWordsAmount={setWordsAmount}
+              numbers={numbers}
+              setNumbers={setNumbers}
+              punctuation={punctuation}
+              setPunctuation={setPunctuation}
+              blind={blind}
+              setBlind={setBlind}
+              difficulty={difficulty}
+              setDifficulty={setDifficulty}
+              language={language}
+              setLanguage={setLanguage}
+              soundOn={soundOn}
+              toggleSound={toggleSound}
+              textSize={textSize}
+              changeTextSize={changeTextSize}
+              onToggleHide={toggleConfig}
+            />
+          ) : (
+            <div className="w-full max-w-5xl flex items-center justify-center mb-3">
+              <button
+                onClick={toggleConfig}
+                className="group flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-panel/70 hover:bg-panel border border-border/70 hover:border-border text-xs font-mono text-dim hover:text-text transition-all duration-150 shadow-xs"
+                title="Click to show filter options"
+              >
+                <span>⚙️</span>
+                <span className="capitalize font-medium text-text">{mode}</span>
+                {mode === "time" ? (
+                  <span className="text-accent font-semibold">{timeAmount}s</span>
+                ) : mode === "words" ? (
+                  <span className="text-accent font-semibold">{wordsAmount}w</span>
+                ) : null}
+                <span className="text-dim/40">•</span>
+                <span className="capitalize text-zinc-400">{difficulty}</span>
+                <span className="text-[10px] text-accent/80 group-hover:text-accent font-semibold ml-1">
+                  ▼ Show Options
+                </span>
+              </button>
+            </div>
+          )}
 
           {mode === "custom" && (
             <div className="w-full max-w-5xl mb-4">
@@ -429,6 +471,7 @@ interface ConfigBarProps {
   toggleSound: () => void;
   textSize: TextSize;
   changeTextSize: (s: TextSize) => void;
+  onToggleHide?: () => void;
 }
 
 function ConfigBar(props: ConfigBarProps) {
@@ -437,6 +480,7 @@ function ConfigBar(props: ConfigBarProps) {
     numbers, setNumbers, punctuation, setPunctuation, blind, setBlind,
     difficulty, setDifficulty, language, setLanguage,
     soundOn, toggleSound, textSize, changeTextSize,
+    onToggleHide,
   } = props;
 
   const tab = (active: boolean) =>
