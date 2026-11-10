@@ -141,11 +141,42 @@ export function NitroRacerTrack({
     return { text: "4TH", icon: "🏎️", color: "text-zinc-400" };
   }, [standing]);
 
-  // Road dashed lines animation duration based on user speed
-  const roadScrollDuration = useMemo(() => {
-    if (!isStarted || wpm === 0) return 0;
-    return Math.max(0.12, 1.4 - (wpm / 120) * 1.1);
-  }, [isStarted, wpm]);
+  // Continuous smooth road scroll using requestAnimationFrame
+  // Eliminates CSS keyframe reset jumping when WPM updates
+  const offsetRef = useRef(0);
+  const wpmRef = useRef(wpm);
+  wpmRef.current = wpm;
+
+  useEffect(() => {
+    let animId: number;
+    let lastTime = performance.now();
+
+    const loop = (now: number) => {
+      const dt = Math.min(0.1, (now - lastTime) / 1000);
+      lastTime = now;
+
+      if (isStarted && wpmRef.current > 0) {
+        // Continuous pixel movement per second proportional to WPM
+        const pxPerSec = Math.max(15, (wpmRef.current / 60) * 140);
+        offsetRef.current = (offsetRef.current + pxPerSec * dt) % 40;
+
+        const dividers = document.querySelectorAll<HTMLElement>(".road-lane-divider");
+        dividers.forEach((el) => {
+          el.style.backgroundPosition = `-${offsetRef.current}px 0`;
+        });
+
+        const rumbles = document.querySelectorAll<HTMLElement>(".road-rumble-strip");
+        rumbles.forEach((el) => {
+          el.style.backgroundPosition = `-${offsetRef.current % 24}px 0`;
+        });
+      }
+
+      animId = requestAnimationFrame(loop);
+    };
+
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
+  }, [isStarted]);
 
   // Nitro status
   const isNitro = wpm >= 70;
@@ -262,10 +293,11 @@ export function NitroRacerTrack({
 
         {/* Top Rumble Strip (Checkered Red/White Curb) */}
         <div
-          className="h-2 bg-repeat-x"
+          className="road-rumble-strip h-2 bg-repeat-x pointer-events-none"
           style={{
             backgroundImage:
               "repeating-linear-gradient(90deg, #dc2626 0px, #dc2626 12px, #f4f4f5 12px, #f4f4f5 24px)",
+            backgroundSize: "24px 8px",
             boxShadow: "inset 0 -1px 2px rgba(0,0,0,0.6)",
           }}
         />
@@ -282,7 +314,7 @@ export function NitroRacerTrack({
           />
 
           {/* Lane Divider 1 */}
-          <LaneDivider roadScrollDuration={roadScrollDuration} />
+          <LaneDivider />
 
           {/* Lane 1: USER (Your Car!) */}
           <LaneRow
@@ -300,11 +332,12 @@ export function NitroRacerTrack({
             carLeftPercent={userCarLeft}
             racerName="YOU"
             isUser
+            isFinished={isFinished}
             wpm={wpm}
           />
 
           {/* Lane Divider 2 */}
-          <LaneDivider roadScrollDuration={roadScrollDuration} />
+          <LaneDivider />
 
           {/* Lane 2: Bot 2 (Thunder Orange) */}
           <LaneRow
@@ -316,7 +349,7 @@ export function NitroRacerTrack({
           />
 
           {/* Lane Divider 3 */}
-          <LaneDivider roadScrollDuration={roadScrollDuration} />
+          <LaneDivider />
 
           {/* Lane 3: Bot 3 (Shadow Purple) */}
           <LaneRow
@@ -354,10 +387,11 @@ export function NitroRacerTrack({
 
         {/* Bottom Rumble Strip */}
         <div
-          className="h-2 bg-repeat-x"
+          className="road-rumble-strip h-2 bg-repeat-x pointer-events-none"
           style={{
             backgroundImage:
               "repeating-linear-gradient(90deg, #dc2626 0px, #dc2626 12px, #f4f4f5 12px, #f4f4f5 24px)",
+            backgroundSize: "24px 8px",
             boxShadow: "inset 0 1px 2px rgba(0,0,0,0.6)",
           }}
         />
@@ -365,18 +399,6 @@ export function NitroRacerTrack({
         {/* Bottom Grass Verge */}
         <div className="h-2 bg-[#1b3320] border-t border-[#2e5234]" />
       </div>
-
-      {/* Global CSS for animated dashed road markers */}
-      <style jsx>{`
-        @keyframes roadDashes {
-          0% {
-            background-position: 0 0;
-          }
-          100% {
-            background-position: -40px 0;
-          }
-        }
-      `}</style>
     </div>
   );
 }
@@ -387,12 +409,14 @@ function LaneRow({
   carLeftPercent,
   racerName,
   isUser,
+  isFinished,
   wpm,
 }: {
   car: React.ReactNode;
   carLeftPercent: number;
   racerName: string;
   isUser: boolean;
+  isFinished?: boolean;
   wpm: number;
 }) {
   return (
@@ -403,7 +427,7 @@ function LaneRow({
         style={{
           left: `${carLeftPercent}%`,
           transition: isUser
-            ? "left 200ms cubic-bezier(0.16, 1, 0.3, 1)"
+            ? "left 180ms cubic-bezier(0.16, 1, 0.3, 1)"
             : "left 260ms cubic-bezier(0.25, 0.9, 0.4, 1)",
           transform: "translate(-50%, -50%)",
         }}
@@ -412,11 +436,13 @@ function LaneRow({
         <div
           className={`absolute -top-4 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded text-[9px] font-mono font-bold tracking-tight whitespace-nowrap shadow pointer-events-none ${
             isUser
-              ? "bg-amber-400 text-black border border-amber-300 font-extrabold scale-105"
+              ? isFinished
+                ? "bg-emerald-400 text-black border border-emerald-300 font-extrabold scale-110 animate-bounce"
+                : "bg-amber-400 text-black border border-amber-300 font-extrabold scale-105"
               : "bg-zinc-800/90 text-zinc-300 border border-zinc-700 text-[8px]"
           }`}
         >
-          {racerName} {isUser && `(${wpm})`}
+          {isUser && isFinished ? `🏁 FINISHED! (${wpm} WPM)` : `${racerName} ${isUser ? `(${wpm})` : ""}`}
         </div>
 
         {/* Car Visual */}
@@ -426,16 +452,16 @@ function LaneRow({
   );
 }
 
-// Dashed Lane Divider
-function LaneDivider({ roadScrollDuration }: { roadScrollDuration: number }) {
+// Dashed Lane Divider with Continuous requestAnimationFrame Scroll
+function LaneDivider() {
   return (
     <div
-      className="h-[2px] w-full pointer-events-none opacity-60"
+      className="road-lane-divider h-[2px] w-full pointer-events-none opacity-60"
       style={{
         backgroundImage:
-          "repeating-linear-gradient(90deg, rgba(255,255,255,0.8) 0px, rgba(255,255,255,0.8) 20px, transparent 20px, transparent 40px)",
+          "repeating-linear-gradient(90deg, rgba(255,255,255,0.85) 0px, rgba(255,255,255,0.85) 20px, transparent 20px, transparent 40px)",
         backgroundSize: "40px 2px",
-        animation: roadScrollDuration > 0 ? `roadDashes ${roadScrollDuration}s linear infinite` : "none",
+        backgroundRepeat: "repeat-x",
       }}
     />
   );
