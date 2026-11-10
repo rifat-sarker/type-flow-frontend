@@ -36,19 +36,19 @@ const CAR_PAINTS = [
 
 const BOTS_BY_DIFFICULTY: Record<"easy" | "medium" | "hard", BotRacer[]> = {
   easy: [
-    { id: "bot1", name: "Silver GT", targetWpm: 76, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
-    { id: "bot2", name: "Thunder V8", targetWpm: 86, color: "#f59e0b", trim: "#fde68a", lane: 2 },
-    { id: "bot3", name: "Shadow Viper", targetWpm: 98, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
+    { id: "bot1", name: "Silver GT", targetWpm: 48, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
+    { id: "bot2", name: "Thunder V8", targetWpm: 83, color: "#f59e0b", trim: "#fde68a", lane: 2 },
+    { id: "bot3", name: "Shadow Viper", targetWpm: 95, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
   ],
   medium: [
-    { id: "bot1", name: "Apex Phantom", targetWpm: 84, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
-    { id: "bot2", name: "Turbo Cyclone", targetWpm: 95, color: "#f59e0b", trim: "#fde68a", lane: 2 },
-    { id: "bot3", name: "Dark Nebula", targetWpm: 110, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
+    { id: "bot1", name: "Apex Phantom", targetWpm: 50, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
+    { id: "bot2", name: "Turbo Cyclone", targetWpm: 83, color: "#f59e0b", trim: "#fde68a", lane: 2 },
+    { id: "bot3", name: "Dark Nebula", targetWpm: 102, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
   ],
   hard: [
-    { id: "bot1", name: "Hyper Mach 1", targetWpm: 92, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
-    { id: "bot2", name: "Velocity X", targetWpm: 106, color: "#f59e0b", trim: "#fde68a", lane: 2 },
-    { id: "bot3", name: "Ghost Demon", targetWpm: 124, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
+    { id: "bot1", name: "Hyper Mach 1", targetWpm: 52, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
+    { id: "bot2", name: "Velocity X", targetWpm: 88, color: "#f59e0b", trim: "#fde68a", lane: 2 },
+    { id: "bot3", name: "Ghost Demon", targetWpm: 115, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
   ],
 };
 
