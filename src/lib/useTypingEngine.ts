@@ -52,7 +52,8 @@ export function useTypingEngine(initialWords: string[]) {
   const startTimeRef = useRef(0);
   const countsRef = useRef({ correct: 0, incorrect: 0, extra: 0, missed: 0, keystrokes: 0 });
   const wpmSamplesRef = useRef<number[]>([]);
-  const recentTimestampsRef = useRef<number[]>([]);
+  const recentCorrectTimestampsRef = useRef<number[]>([]);
+  const lastKeyTimeRef = useRef<number>(0);
   // Per-character hit/miss for the whole test, used to find the keys you keep
   // getting wrong so practice can be weighted toward them.
   const keyStatsRef = useRef<Record<string, { hits: number; misses: number }>>({});
@@ -80,9 +81,9 @@ export function useTypingEngine(initialWords: string[]) {
     return Math.max((Date.now() - startTimeRef.current) / 60000, 1 / 3600);
   }, []);
 
-  /** Call on an interval (e.g. every second) for live WPM + consistency sampling. */
+  /** Call on an interval (e.g. every second) for live Net WPM sampling based strictly on CORRECT chars. */
   const sampleWpm = useCallback((): number => {
-    const wpm = Math.round(countsRef.current.keystrokes / 5 / minutesElapsed());
+    const wpm = Math.max(0, Math.round(countsRef.current.correct / 5 / minutesElapsed()));
     wpmSamplesRef.current.push(wpm);
     return wpm;
   }, [minutesElapsed]);
@@ -98,7 +99,7 @@ export function useTypingEngine(initialWords: string[]) {
     (ch: string): CharStatus | "space" | null => {
       if (finished) return null;
       const now = Date.now();
-      recentTimestampsRef.current.push(now);
+      lastKeyTimeRef.current = now;
       if (!startTimeRef.current) {
         startTimeRef.current = now;
         setStarted(true);
@@ -114,6 +115,16 @@ export function useTypingEngine(initialWords: string[]) {
       if (ch === " ") {
         if (charIdxRef.current > 0) {
           const chars = word.chars.slice();
+          let wordAllCorrect = !word.extra && charIdxRef.current >= chars.length;
+          for (let i = 0; i < chars.length; i++) {
+            if (chars[i].status !== "correct") {
+              wordAllCorrect = false;
+            }
+          }
+          if (wordAllCorrect) {
+            recentCorrectTimestampsRef.current.push(now);
+          }
+
           for (let i = charIdxRef.current; i < chars.length; i++) {
             if (chars[i].status === "pending") {
               chars[i] = { ...chars[i], status: "missed" };
@@ -135,6 +146,10 @@ export function useTypingEngine(initialWords: string[]) {
         const status: CharStatus = ch === expected ? "correct" : "incorrect";
         chars[charIdxRef.current] = { ...chars[charIdxRef.current], status };
         countsRef.current[status === "correct" ? "correct" : "incorrect"]++;
+
+        if (status === "correct") {
+          recentCorrectTimestampsRef.current.push(now);
+        }
 
         // Blame the key that was *supposed* to be pressed, not the one that was.
         const key = expected.toLowerCase();
@@ -229,37 +244,38 @@ export function useTypingEngine(initialWords: string[]) {
       startTimeRef.current = 0;
       countsRef.current = { correct: 0, incorrect: 0, extra: 0, missed: 0, keystrokes: 0 };
       wpmSamplesRef.current = [];
-      recentTimestampsRef.current = [];
+      recentCorrectTimestampsRef.current = [];
+      lastKeyTimeRef.current = 0;
       keyStatsRef.current = {};
     },
     [setWordIdx, setCharIdx, commitWordStates]
   );
 
-  /** High-frequency real-time speed calculation with immediate idle decay */
+  /** High-frequency real-time NET WPM calculation based strictly on CORRECT typing */
   const getInstantWpm = useCallback((): number => {
     if (finished || !started) return 0;
     const now = Date.now();
-    // Sliding window: last 1.8 seconds
+    // Sliding window: last 1.8 seconds of CORRECT typing
     const cutoff = now - 1800;
-    recentTimestampsRef.current = recentTimestampsRef.current.filter((t) => t > cutoff);
-    const count = recentTimestampsRef.current.length;
+    recentCorrectTimestampsRef.current = recentCorrectTimestampsRef.current.filter((t) => t > cutoff);
+    const count = recentCorrectTimestampsRef.current.length;
     if (count === 0) return 0;
 
-    const oldest = recentTimestampsRef.current[0];
+    const oldest = recentCorrectTimestampsRef.current[0];
     const windowSec = Math.max(0.4, (now - oldest) / 1000);
-    const instantWpm = Math.round((count / 5) / (windowSec / 60));
+    // Real Net WPM based on correct keystrokes
+    const instantNetWpm = Math.round((count / 5) / (windowSec / 60));
 
     // Idle decay: if no key pressed in > 350ms, rapidly decay to 0
-    const lastKey = recentTimestampsRef.current[count - 1];
-    const timeSinceLastKey = now - lastKey;
+    const timeSinceLastKey = now - lastKeyTimeRef.current;
     if (timeSinceLastKey > 750) {
       return 0;
     } else if (timeSinceLastKey > 350) {
       const decay = 1 - (timeSinceLastKey - 350) / 400;
-      return Math.max(0, Math.round(instantWpm * decay));
+      return Math.max(0, Math.round(instantNetWpm * decay));
     }
 
-    return instantWpm;
+    return instantNetWpm;
   }, [finished, started]);
 
   const progressPct = wordStates.length

@@ -156,18 +156,34 @@ export function TypingTest() {
     return words.reduce((acc, w) => acc + w.length + 1, 0);
   }, [mode, timeAmount, words]);
 
-  // Real-time progress: ONLY advances when you type characters!
-  // Uses full floating-point precision for buttery smooth animation
+  // Real-time progress: ONLY advances when you type CORRECT characters!
+  // Typos/errors do NOT advance the car until corrected!
   const userProgress = useMemo(() => {
     if (!totalCharsCount || totalCharsCount === 0) return 0;
-    let typed = 0;
+    let correctChars = 0;
+
     for (let i = 0; i < engine.currentWordIdx && i < engine.wordStates.length; i++) {
-      typed += engine.wordStates[i].chars.length + 1;
+      const w = engine.wordStates[i];
+      const allCorrect = w.chars.every((c) => c.status === "correct") && !w.extra;
+      if (allCorrect) {
+        correctChars += w.chars.length + 1; // chars + space
+      } else {
+        correctChars += w.chars.filter((c) => c.status === "correct").length;
+      }
     }
+
     if (engine.currentWordIdx < engine.wordStates.length) {
-      typed += engine.currentCharIdx;
+      const curWord = engine.wordStates[engine.currentWordIdx];
+      for (let i = 0; i < engine.currentCharIdx && i < curWord.chars.length; i++) {
+        if (curWord.chars[i].status === "correct") {
+          correctChars += 1;
+        } else {
+          break;
+        }
+      }
     }
-    return Math.min(100, (typed / totalCharsCount) * 100);
+
+    return Math.min(100, (correctChars / totalCharsCount) * 100);
   }, [totalCharsCount, engine.currentWordIdx, engine.currentCharIdx, engine.wordStates]);
 
   const [instantWpm, setInstantWpm] = useState(0);
