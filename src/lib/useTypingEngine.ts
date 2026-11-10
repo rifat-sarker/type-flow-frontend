@@ -52,6 +52,7 @@ export function useTypingEngine(initialWords: string[]) {
   const startTimeRef = useRef(0);
   const countsRef = useRef({ correct: 0, incorrect: 0, extra: 0, missed: 0, keystrokes: 0 });
   const wpmSamplesRef = useRef<number[]>([]);
+  const recentTimestampsRef = useRef<number[]>([]);
   // Per-character hit/miss for the whole test, used to find the keys you keep
   // getting wrong so practice can be weighted toward them.
   const keyStatsRef = useRef<Record<string, { hits: number; misses: number }>>({});
@@ -96,8 +97,10 @@ export function useTypingEngine(initialWords: string[]) {
   const typeChar = useCallback(
     (ch: string): CharStatus | "space" | null => {
       if (finished) return null;
+      const now = Date.now();
+      recentTimestampsRef.current.push(now);
       if (!startTimeRef.current) {
-        startTimeRef.current = Date.now();
+        startTimeRef.current = now;
         setStarted(true);
       }
       countsRef.current.keystrokes++;
@@ -226,10 +229,38 @@ export function useTypingEngine(initialWords: string[]) {
       startTimeRef.current = 0;
       countsRef.current = { correct: 0, incorrect: 0, extra: 0, missed: 0, keystrokes: 0 };
       wpmSamplesRef.current = [];
+      recentTimestampsRef.current = [];
       keyStatsRef.current = {};
     },
     [setWordIdx, setCharIdx, commitWordStates]
   );
+
+  /** High-frequency real-time speed calculation with immediate idle decay */
+  const getInstantWpm = useCallback((): number => {
+    if (finished || !started) return 0;
+    const now = Date.now();
+    // Sliding window: last 1.8 seconds
+    const cutoff = now - 1800;
+    recentTimestampsRef.current = recentTimestampsRef.current.filter((t) => t > cutoff);
+    const count = recentTimestampsRef.current.length;
+    if (count === 0) return 0;
+
+    const oldest = recentTimestampsRef.current[0];
+    const windowSec = Math.max(0.4, (now - oldest) / 1000);
+    const instantWpm = Math.round((count / 5) / (windowSec / 60));
+
+    // Idle decay: if no key pressed in > 350ms, rapidly decay to 0
+    const lastKey = recentTimestampsRef.current[count - 1];
+    const timeSinceLastKey = now - lastKey;
+    if (timeSinceLastKey > 750) {
+      return 0;
+    } else if (timeSinceLastKey > 350) {
+      const decay = 1 - (timeSinceLastKey - 350) / 400;
+      return Math.max(0, Math.round(instantWpm * decay));
+    }
+
+    return instantWpm;
+  }, [finished, started]);
 
   const progressPct = wordStates.length
     ? Math.min(100, Math.round((currentWordIdx / wordStates.length) * 100))
@@ -237,8 +268,17 @@ export function useTypingEngine(initialWords: string[]) {
 
   const getKeyStats = useCallback(() => keyStatsRef.current, []);
 
+  const getLiveStats = useCallback(() => {
+    const c = countsRef.current;
+    const total = c.correct + c.incorrect + c.extra + c.missed;
+    const accuracy = total > 0 ? Math.round((c.correct / total) * 100) : 100;
+    return { accuracy, correct: c.correct, incorrect: c.incorrect, keystrokes: c.keystrokes };
+  }, []);
+
   return {
     getKeyStats,
+    getLiveStats,
+    getInstantWpm,
     wordStates,
     currentWordIdx,
     currentCharIdx,

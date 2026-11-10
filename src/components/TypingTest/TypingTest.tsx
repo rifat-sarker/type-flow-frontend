@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTypingEngine, FinishStats } from "@/lib/useTypingEngine";
 import { generateWords, randomQuoteWords, Difficulty, setActiveBank } from "@/lib/wordBank";
 import { LANGUAGES, LanguageId, getLanguage } from "@/lib/languages";
@@ -11,6 +11,7 @@ import { TextSize, TEXT_SIZES, TEXT_SIZE_LABEL, TEXT_SIZE_FULL_NAME, getStoredTe
 import { WordDisplay } from "./WordDisplay";
 import { MobileInput } from "./MobileInput";
 import { ResultsPanel } from "./ResultsPanel";
+import { NitroRacerTrack } from "./NitroRacerTrack";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
@@ -115,7 +116,56 @@ export function TypingTest() {
   const savedRef = useRef(false);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { reset, appendWords, typeChar, backspace, finish, sampleWpm, computeFinishStats, getKeyStats } = engine;
+  const {
+    reset,
+    appendWords,
+    typeChar,
+    backspace,
+    finish,
+    sampleWpm,
+    computeFinishStats,
+    getKeyStats,
+    getLiveStats,
+  } = engine;
+
+  // Target characters for the race track:
+  // - In time mode: benchmark target (timeAmount * 5 chars, e.g. 150 chars for 30s at 60 WPM benchmark)
+  // - In words/quote/custom mode: total characters in the text
+  const totalCharsCount = useMemo(() => {
+    if (mode === "time") {
+      return timeAmount * 5;
+    }
+    return words.reduce((acc, w) => acc + w.length + 1, 0);
+  }, [mode, timeAmount, words]);
+
+  // Real-time progress: ONLY advances when you type characters!
+  // Uses full floating-point precision for buttery smooth animation
+  const userProgress = useMemo(() => {
+    if (!totalCharsCount || totalCharsCount === 0) return 0;
+    let typed = 0;
+    for (let i = 0; i < engine.currentWordIdx && i < engine.wordStates.length; i++) {
+      typed += engine.wordStates[i].chars.length + 1;
+    }
+    if (engine.currentWordIdx < engine.wordStates.length) {
+      typed += engine.currentCharIdx;
+    }
+    return Math.min(100, (typed / totalCharsCount) * 100);
+  }, [totalCharsCount, engine.currentWordIdx, engine.currentCharIdx, engine.wordStates]);
+
+  const [instantWpm, setInstantWpm] = useState(0);
+
+  // Fast game physics loop for instantaneous speed and realistic deceleration
+  useEffect(() => {
+    if (!engine.started || engine.finished) {
+      setInstantWpm(0);
+      return;
+    }
+    const loop = setInterval(() => {
+      const spd = engine.getInstantWpm();
+      setInstantWpm(spd);
+    }, 50);
+    return () => clearInterval(loop);
+  }, [engine.started, engine.finished, engine.getInstantWpm]);
 
   const restart = useCallback(() => {
     const w = buildWords(mode, wordsAmount, numbers, punctuation, difficulty, customText);
@@ -299,17 +349,30 @@ export function TypingTest() {
             </div>
           )}
 
-          <div className="h-8 mb-2 font-mono text-accent text-xl font-semibold">
-            {mode === "time" ? timeLeft : mode === "zen" ? `${liveWpm} wpm` : `${liveWpm} wpm`}
-          </div>
-
-          <WordDisplay
-            wordStates={engine.wordStates}
+          {/* Nitro Type Racing Speedway */}
+          <NitroRacerTrack
+            progress={engine.finished ? 100 : userProgress}
+            wpm={engine.finished ? liveWpm : instantWpm}
+            accuracy={getLiveStats().accuracy}
+            isStarted={engine.started}
+            isFinished={engine.finished}
+            mode={mode}
+            timeLeft={timeLeft}
+            totalTime={timeAmount}
             currentWordIdx={engine.currentWordIdx}
-            currentCharIdx={engine.currentCharIdx}
-            blind={blind}
-            size={textSize}
+            totalWords={words.length}
           />
+
+          {/* Typing Arena Container with pure contrast */}
+          <div className="w-full max-w-5xl px-6 py-8 rounded-xl bg-panel/40 border border-border/80 shadow-md backdrop-blur-xs transition-colors">
+            <WordDisplay
+              wordStates={engine.wordStates}
+              currentWordIdx={engine.currentWordIdx}
+              currentCharIdx={engine.currentCharIdx}
+              blind={blind}
+              size={textSize}
+            />
+          </div>
 
           <MobileInput
             onChar={(ch) => {
@@ -324,9 +387,13 @@ export function TypingTest() {
             disabled={engine.finished}
           />
 
-          <div className="mt-6">
-            <Button variant="secondary" onClick={restart}>
-              Restart (tab)
+          <div className="mt-6 flex items-center gap-3">
+            <Button variant="secondary" onClick={restart} className="flex items-center gap-2">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              <span>Restart (Tab)</span>
             </Button>
           </div>
 
