@@ -399,6 +399,7 @@ export function TypingTest() {
             isStarted={engine.started}
             isFinished={engine.finished}
             mode={mode}
+            difficulty={difficulty}
             timeLeft={timeLeft}
             totalTime={timeAmount}
             currentWordIdx={engine.currentWordIdx}

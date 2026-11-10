@@ -9,6 +9,7 @@ export interface NitroRacerProps {
   isStarted: boolean;
   isFinished: boolean;
   mode: "time" | "words" | "quote" | "zen" | "custom";
+  difficulty?: "easy" | "medium" | "hard";
   timeLeft?: number;
   totalTime?: number;
   currentWordIdx?: number;
@@ -33,11 +34,23 @@ const CAR_PAINTS = [
   { id: "violet", name: "Hyper Violet", body: "#8b5cf6", trim: "#d8b4fe", glow: "rgba(139, 92, 246, 0.5)" },
 ];
 
-const BOTS_CONFIG: BotRacer[] = [
-  { id: "bot1", name: "Silver Arrow", targetWpm: 45, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
-  { id: "bot2", name: "Thunder Orange", targetWpm: 68, color: "#f59e0b", trim: "#fde68a", lane: 2 },
-  { id: "bot3", name: "Shadow Purple", targetWpm: 88, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
-];
+const BOTS_BY_DIFFICULTY: Record<"easy" | "medium" | "hard", BotRacer[]> = {
+  easy: [
+    { id: "bot1", name: "Silver GT", targetWpm: 72, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
+    { id: "bot2", name: "Thunder V8", targetWpm: 82, color: "#f59e0b", trim: "#fde68a", lane: 2 },
+    { id: "bot3", name: "Shadow Viper", targetWpm: 94, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
+  ],
+  medium: [
+    { id: "bot1", name: "Apex Phantom", targetWpm: 78, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
+    { id: "bot2", name: "Turbo Cyclone", targetWpm: 88, color: "#f59e0b", trim: "#fde68a", lane: 2 },
+    { id: "bot3", name: "Dark Nebula", targetWpm: 102, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
+  ],
+  hard: [
+    { id: "bot1", name: "Hyper Mach 1", targetWpm: 86, color: "#94a3b8", trim: "#cbd5e1", lane: 0 },
+    { id: "bot2", name: "Velocity X", targetWpm: 98, color: "#f59e0b", trim: "#fde68a", lane: 2 },
+    { id: "bot3", name: "Ghost Demon", targetWpm: 116, color: "#a855f7", trim: "#e9d5ff", lane: 3 },
+  ],
+};
 
 export function NitroRacerTrack({
   progress,
@@ -46,11 +59,16 @@ export function NitroRacerTrack({
   isStarted,
   isFinished,
   mode,
+  difficulty = "easy",
   timeLeft,
   totalTime,
   currentWordIdx,
   totalWords,
 }: NitroRacerProps) {
+  const bots = useMemo(() => {
+    return BOTS_BY_DIFFICULTY[difficulty] || BOTS_BY_DIFFICULTY.easy;
+  }, [difficulty]);
+
   const [carPaintIdx, setCarPaintIdx] = useState(0);
   const [botPositions, setBotPositions] = useState<number[]>([0, 0, 0]);
   const [showPaintMenu, setShowPaintMenu] = useState(false);
@@ -107,7 +125,7 @@ export function NitroRacerTrack({
     if (mode === "time" && totalTime) benchmarkTime = totalTime;
     else if (totalWords) benchmarkTime = Math.max(15, (totalWords / 60) * 60);
 
-    const newPositions = BOTS_CONFIG.map((bot) => {
+    const newPositions = bots.map((bot) => {
       // Calculate bot progress: Bot moves steadily at its target WPM
       // A 60 WPM bot types 1 word/sec
       const wordsTyped = (bot.targetWpm / 60) * elapsedSeconds;
@@ -304,13 +322,13 @@ export function NitroRacerTrack({
 
         {/* The 4 Lanes Area */}
         <div className="relative h-44 sm:h-48 bg-[#16171d] flex flex-col justify-around py-1">
-          {/* Lane 0: Bot 1 (Silver Arrow) */}
+          {/* Lane 0: Bot 1 */}
           <LaneRow
-            car={<TopDownCar bodyColor={BOTS_CONFIG[0].color} trimColor={BOTS_CONFIG[0].trim} />}
+            car={<TopDownCar bodyColor={bots[0].color} trimColor={bots[0].trim} />}
             carLeftPercent={Math.min(94, Math.max(2, botPositions[0]))}
-            racerName={BOTS_CONFIG[0].name}
+            racerName={bots[0].name}
             isUser={false}
-            wpm={BOTS_CONFIG[0].targetWpm}
+            wpm={bots[0].targetWpm}
           />
 
           {/* Lane Divider 1 */}
@@ -339,25 +357,25 @@ export function NitroRacerTrack({
           {/* Lane Divider 2 */}
           <LaneDivider />
 
-          {/* Lane 2: Bot 2 (Thunder Orange) */}
+          {/* Lane 2: Bot 2 */}
           <LaneRow
-            car={<TopDownCar bodyColor={BOTS_CONFIG[1].color} trimColor={BOTS_CONFIG[1].trim} />}
+            car={<TopDownCar bodyColor={bots[1].color} trimColor={bots[1].trim} />}
             carLeftPercent={Math.min(94, Math.max(2, botPositions[1]))}
-            racerName={BOTS_CONFIG[1].name}
+            racerName={bots[1].name}
             isUser={false}
-            wpm={BOTS_CONFIG[1].targetWpm}
+            wpm={bots[1].targetWpm}
           />
 
           {/* Lane Divider 3 */}
           <LaneDivider />
 
-          {/* Lane 3: Bot 3 (Shadow Purple) */}
+          {/* Lane 3: Bot 3 */}
           <LaneRow
-            car={<TopDownCar bodyColor={BOTS_CONFIG[2].color} trimColor={BOTS_CONFIG[2].trim} />}
+            car={<TopDownCar bodyColor={bots[2].color} trimColor={bots[2].trim} />}
             carLeftPercent={Math.min(94, Math.max(2, botPositions[2]))}
-            racerName={BOTS_CONFIG[2].name}
+            racerName={bots[2].name}
             isUser={false}
-            wpm={BOTS_CONFIG[2].targetWpm}
+            wpm={bots[2].targetWpm}
           />
 
           {/* Starting Truss Bridge Gantry Structure on Left */}
