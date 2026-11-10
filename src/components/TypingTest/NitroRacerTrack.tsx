@@ -157,11 +157,16 @@ export function NitroRacerTrack({
     return { text: "4TH", icon: "🏎️", color: "text-zinc-400" };
   }, [standing]);
 
-  // Continuous smooth road scroll using requestAnimationFrame
-  // Eliminates CSS keyframe reset jumping when WPM updates
+  // Continuous smooth road scroll and physics-based car momentum
+  // Eliminates CSS keyframe reset jumping and word-boundary "dakka" jolts
   const offsetRef = useRef(0);
   const wpmRef = useRef(wpm);
   wpmRef.current = wpm;
+
+  const userCarRef = useRef<HTMLDivElement>(null);
+  const visualUserLeftRef = useRef(2);
+  const targetProgressRef = useRef(progress);
+  targetProgressRef.current = progress;
 
   useEffect(() => {
     let animId: number;
@@ -189,6 +194,25 @@ export function NitroRacerTrack({
       rumbles.forEach((el) => {
         el.style.backgroundPosition = `-${offsetRef.current % 24}px 0`;
       });
+
+      // Smooth physics momentum for user's car:
+      // Bridges the micro-gap between words so the car glides continuously like a bot car!
+      if (isStarted) {
+        const target = Math.min(94, Math.max(2, targetProgressRef.current));
+        const diff = target - visualUserLeftRef.current;
+        // Critically damped smoothing curve: fluid coasting between word boundaries
+        const smoothing = Math.min(1, dt * 6.5);
+        visualUserLeftRef.current += diff * smoothing;
+
+        if (userCarRef.current) {
+          userCarRef.current.style.left = `${visualUserLeftRef.current}%`;
+        }
+      } else {
+        visualUserLeftRef.current = 2;
+        if (userCarRef.current) {
+          userCarRef.current.style.left = "2%";
+        }
+      }
 
       animId = requestAnimationFrame(loop);
     };
@@ -337,6 +361,7 @@ export function NitroRacerTrack({
 
           {/* Lane 1: USER (Your Car!) */}
           <LaneRow
+            carRef={userCarRef}
             car={
               <TopDownCar
                 bodyColor={userPaint.body}
@@ -430,6 +455,7 @@ function LaneRow({
   isUser,
   isFinished,
   wpm,
+  carRef,
 }: {
   car: React.ReactNode;
   carLeftPercent: number;
@@ -437,17 +463,17 @@ function LaneRow({
   isUser: boolean;
   isFinished?: boolean;
   wpm: number;
+  carRef?: React.RefObject<HTMLDivElement>;
 }) {
   return (
     <div className="relative h-9 sm:h-10 w-full flex items-center">
       {/* Car Container */}
       <div
+        ref={carRef}
         className="absolute top-1/2 -translate-y-1/2 z-20 flex items-center"
         style={{
           left: `${carLeftPercent}%`,
-          transition: isUser
-            ? "left 180ms cubic-bezier(0.16, 1, 0.3, 1)"
-            : "left 260ms cubic-bezier(0.25, 0.9, 0.4, 1)",
+          transition: isUser ? "none" : "left 260ms cubic-bezier(0.25, 0.9, 0.4, 1)",
           transform: "translate(-50%, -50%)",
         }}
       >
